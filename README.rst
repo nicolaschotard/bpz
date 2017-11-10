@@ -5,6 +5,24 @@ bpz: Bayesian Photometric Redshifts
    :target: https://landscape.io/github/nicolaschotard/bpz/master
    :alt: Code Health
 
-A fork of `bpz-1.99.3 <http://www.stsci.edu/~dcoe/BPZ/>`_.
+Introduction
+------------
 
-Personal version of BPZ. Not intended to be shared (yet).
+This repository initialy contained a fork of `bpz-1.99.3
+<http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz>`_. This is now a
+personal version of BPZ. Not intended to be shared (yet).
+
+Documentation about BPZ can be found on the main BPZ webpage::
+
+  http://www.stsci.edu/~dcoe/BPZ/
+
+Installation
+------------
+
+TBD
+
+Usage
+-----
+
+TBD
+
