@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""Run BPZ."""
+"""Finalize BPZ."""
 
 import sys
 from bpz import main
 
-sys.exit(main.bpz_run())
+sys.exit(main.bpz_finalize())
 

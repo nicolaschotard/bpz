@@ -1,7 +1,6 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-# Automatically adapted for numpy Jun 08, 2006 by
 
 # Automatically adapted for numpy Jun 08, 2006 by
 
@@ -16,40 +15,13 @@ from builtins import range
 from past.utils import old_div
 import os
 import sys
-#import shutil
-#from glob import glob
-#import fitsio
-#import math
-#from Numeric import *
-from numpy import *
+
+import numpy as np
 sys.float_output_precision = 5  # PRINTING ARRAYS: # OF DECIMALS
-from types import *  # TO TELL WHAT TYPE A VARIABLE IS
-from time import *
-from .MLab_coe import *  # median, std, mean
-# from bisect import bisect  # WHERE ITEM WOULD FIT IN SORTED LIST
-#from RandomArray import *
-#from biggles import *
-#from useful import points, connect, mark_faroutliers
-#from sortcat import sortcat
-# from NumTut import *  # view ARRAY VIEWER
-#from colormap import colormap, Colormap, addColormap
-# plotconfig() CALLED BELOW
-#import numarray
-#import pyfits
-from .compress2 import compress2 as compress
-import popen2
+import types  # TO TELL WHAT TYPE A VARIABLE IS
+import time
+from . import MLab_coe # median, std, mean
 import string  # LOAD THIS AFTER numpy, BECAUSE numpy HAS ITS OWN string
-
-# ORIGINALLY ksbtools.py
-# NOW coetools.py, BROKEN INTO coeio, smooth
-
-# NOTE PLACEMENT OF THIS LINE IS IMPORTANT
-# coeio ALSO IMPORTS FROM coetools (THIS MODULE)
-# SO TO AVOID AN INFINITE LOOP, coeio ONLY LOADS FROM coetools
-#  THOSE FUNCTIONS DEFINED BEFORE coeio IS LOADED
-# SO, I'M LOADING THESE AFTER EVERYTHING DEFINED HERE!
-#from coeio import *
-#from smooth import *
 
 numerix = os.environ.get('NUMERIX', '')
 
@@ -59,12 +31,12 @@ die = sys.exit
 
 def color1to255(color):
     # CONVERT TO 0-255 SCALE
-    return tuple((array(color) * 255. + 0.49).astype(int).tolist())
+    return tuple((np.array(color) * 255. + 0.49).astype(int).tolist())
 
 
 def color255to1(color):
     # CONVERT TO 0-255 SCALE
-    return tuple((old_div(array(color), 255.)).tolist())
+    return tuple((old_div(np.array(color), 255.)).tolist())
 
 
 def color2hex(color):
@@ -79,9 +51,6 @@ def color2hex(color):
         colorhex += h
     return colorhex
 
-###
-
-
 def keyvals(k, keys, vals):
     """GIVEN {keys: vals}, RETURNS VALUES FOR k
     THERE MUST BE A BUILT-IN WAY OF DOING THIS!"""
@@ -90,8 +59,8 @@ def keyvals(k, keys, vals):
 
     def f(x): return d[x]
     v = list(map(f, ravel(k)))
-    if type(k) == type(array([])):
-        v = array(v)
+    if type(k) == type(np.array([])):
+        v = np.array(v)
         v.shape = k.shape
     return v
 
@@ -117,7 +86,7 @@ def cdmk(dir):
 def splitparagraphs(txt):
     paragraphs = ['']
     for line in txt:
-        line = string.strip(line)
+        line = line.strip()
         if not line:
             line = '\n'
         if line[-1] != '\n':
@@ -132,14 +101,6 @@ def splitparagraphs(txt):
     return paragraphs
 
 
-def echo(word):
-    cmd = 'echo ' + word
-    subproc = popen2.Popen4(cmd)
-    out = subproc.fromchild.readlines()  # SExtractor output
-    out = out[0][:-1]  # LIST OF 1 STRING WITH \n AT END
-    return out
-
-
 home = os.environ.get('HOME', '')
 
 
@@ -148,19 +109,12 @@ def singlevalue(x):
     # return type(x) in [float, int]  THERE ARE MORE TYPECODES IN Numpy
     # THERE ARE MORE TYPECODES IN Numpy
     return type(x) in [float, float32, float64, int, int0, int8, int16, int32, int64]
-# try:
-##         a = x[0]
-##         singleval = False
-# except:
-##         singleval = True
-# return singleval
-
 
 def comma(x, ndec=0):
     if ndec:
         format = '%%.%df' % ndec
         s = format % x
-        si, sf = string.split(s, '.')
+        si, sf = s.split('.')
         sf = '.' + sf
     else:
         s = '%d' % x
@@ -202,22 +156,22 @@ def num2str(x, max=3):
         return x
 
 
-def str2num(str, rf=0):
+def str2num(strg, rf=0):
     """CONVERTS A STRING TO A NUMBER (INT OR FLOAT) IF POSSIBLE
     ALSO RETURNS FORMAT IF rf=1"""
     try:
-        num = string.atoi(str)
+        num = int(strg)
         format = 'd'
     except:
         try:
-            num = string.atof(str)
+            num = float(strg)
             format = 'f'
         except:
-            if not string.strip(str):
+            if not strg.strip():
                 num = None
                 format = ''
             else:
-                num = str
+                num = strg
                 format = 's'
     if rf:
         return (num, format)
@@ -229,7 +183,7 @@ def minmax(x, range=None):
     if range:
         lo, hi = range
         good = between(lo, x, hi)
-        x = compress(good, x)
+        x = np.compress(good, x)
     return min(x), max(x)
 
 #############################################################################
@@ -242,10 +196,10 @@ def minmax(x, range=None):
 
 def FltArr(n0, n1):
     """MAKES A 2-D FLOAT ARRAY"""
-    #a = ones([n0,n1], dtype=float32)
-    # a = ones([n0,n1], float32)  # DATA READ IN LESS ACCURATELY IN loaddata !!
+    #a = np.ones([n0,n1], dtype=float32)
+    # a = np.ones([n0,n1], float32)  # DATA READ IN LESS ACCURATELY IN loaddata !!
     # float32 can't handle more than 8 significant digits
-    a = ones([n0, n1], float)
+    a = np.ones([n0, n1], float)
     return(a[:])
 
 
@@ -287,48 +241,48 @@ def inputnum(question=''):
     while not done:
         rinp = input(question)
         try:
-            x = string.atof(rinp)
+            x = float(rinp)
             done = 1
         except:
             pass
     try:
-        x = string.atoi(rinp)
+        x = int(rinp)
     except:
         pass
     return x
 
 
-def stringsplitatoi(str, separator=''):
+def stringsplitatoi(strg, separator=''):
     if separator:
-        words = string.split(str, separator)
+        words = strg.split(separator)
     else:
-        words = string.split(str)
+        words = strg.split()
     vals = []
     for word in words:
-        vals.append(string.atoi(word))
+        vals.append(int(word))
     return vals
 
 
 def stringsplitatof(str, separator=''):
     if separator:
-        words = string.split(str, separator)
+        words = strg.split(separator)
     else:
-        words = string.split(str)
+        words = strg.split()
     vals = []
     for word in words:
-        vals.append(string.atof(word))
+        vals.append(float(word))
     return vals
 
 
-def stringsplitstrip(str, separator=''):
+def stringsplitstrip(strg, separator=''):
     # SPLITS BUT ALSO STRIPS EACH ITEM OF WHITESPACE
     if separator:
-        words = string.split(str, separator)
+        words = strg.split(separator)
     else:
-        words = string.split(str)
+        words = strg.split()
     vals = []
     for word in words:
-        vals.append(string.strip(word))
+        vals.append(word.strip())
     return vals
 
 
@@ -371,8 +325,6 @@ def strbtw1(s, left, right=None):
         i2 = string.find(s, right, i1 + 1)
         if (i2 > i1):
             out = s[i1 + 1:i2]
-    #out = string.split(s, left)[1]
-    #out = string.split(out, right)[0]
     return out
 
 
@@ -396,8 +348,6 @@ def strbtw(s, left, right=None, r=False):
             i2 = string.find(s, right, i1 + 1)
         if (i2 > i1):
             out = s[i1 + 1:i2]
-    #out = string.split(s, left)[1]
-    #out = string.split(out, right)[0]
     return out
 
 
@@ -425,10 +375,10 @@ def putids(selfvalues, selfids, ids, values):
         n = len(selfvalues)
     except:
         n = len(selfids)
-        selfvalues = zeros(n, int) + selfvalues
-    indexlist = zeros(max(selfids) + 1, int) - 1
-    put(indexlist, array(selfids).astype(int), arange(len(selfids)))
-    indices = take(indexlist, array(ids).astype(int))
+        selfvalues = np.zeros(n, int) + selfvalues
+    indexlist = np.zeros(max(selfids) + 1, int) - 1
+    put(indexlist, np.array(selfids).astype(int), arange(len(selfids)))
+    indices = take(indexlist, np.array(ids).astype(int))
     put(selfvalues, indices, values)
     return selfvalues
 
@@ -442,16 +392,16 @@ def takelist(a, ind):
 
 def common(id1, id2):
     # ASSUME NO IDS ARE NEGATIVE
-    id1 = array(id1).astype(int)
-    id2 = array(id2).astype(int)
+    id1 = np.array(id1).astype(int)
+    id2 = np.array(id2).astype(int)
     n = max((max(id1), max(id2)))
-    in1 = zeros(n + 1, int)
-    in2 = zeros(n + 1, int)
+    in1 = np.zeros(n + 1, int)
+    in2 = np.zeros(n + 1, int)
     put(in1, id1, 1)
     put(in2, id2, 1)
     inboth = in1 * in2
     ids = arange(n + 1)
-    ids = compress(inboth, ids)
+    ids = np.compress(inboth, ids)
     return ids
 
 # FROM sparse.py ("sparse3")
@@ -469,9 +419,9 @@ def census(a, returndict=1):
     if returndict:
         print(i)
         print(s)
-        #i, s = compress(s, (i, s))
-        i = compress(s, i)
-        s = compress(s, s)
+        #i, s = np.compress(s, (i, s))
+        i = np.compress(s, i)
+        s = np.compress(s, s)
         print('is')
         print(i)
         print(s)
@@ -488,8 +438,8 @@ def census(a, returndict=1):
 def invertselection(ids, all):
     if type(all) == int:  # size input
         all = arange(all) + 1
-        put(all, array(ids) - 1, 0)
-        all = compress(all, all)
+        put(all, np.array(ids) - 1, 0)
+        all = np.compress(all, all)
         return all
     else:
         out = []
@@ -502,8 +452,8 @@ def invertselection(ids, all):
 
 def mergeids(id1, id2):
     # ASSUME NO IDS ARE NEGATIVE
-    id1 = array(id1).astype(int)
-    id2 = array(id2).astype(int)
+    id1 = np.array(id1).astype(int)
+    id2 = np.array(id2).astype(int)
     idc = common(id1, id2)
     id3 = invertselection(idc, id2)
     return concatenate((id1, id3))
@@ -613,7 +563,7 @@ def xref(data, ids, idcol=0, notfoundval=None):
     for id in ids:
         xrefs.append(dict.get(id, notfoundval))
 
-    return array(xrefs)
+    return np.array(xrefs)
 
 
 def takeid(data, id):
@@ -645,7 +595,7 @@ def takeids(data, ids, idrow=0, keepzeros=0):
             outdata.append(data[:, i])
         elif keepzeros:
             outdata.append(0. * data[:, 0])
-    return transpose(array(outdata))
+    return np.transpose(np.array(outdata))
 
 
 #################################
@@ -705,7 +655,7 @@ def addmags(m1, m2, dm1=0, dm2=0):
 
 def addfluxes(F1, F2, dF1=0, dF2=0):
     F = F1 + F2
-    dF = sqrt(dF1 ** 2 + dF2 ** 2)
+    dF = np.sqrt(dF1 ** 2 + dF2 ** 2)
     output = (F, dF)
 
     return output
@@ -725,39 +675,25 @@ def sex2bpzmags(f, ef, zp=0., sn_min=1.):
     """
 
     # Flux <=0, meaningful phot. error
-    nondetected = less_equal(f, 0.) * greater(ef, 0)
-    nonobserved = less_equal(ef, 0.)  # Negative errors
+    nondetected = np.less_equal(f, 0.) * greater(ef, 0)
+    nonobserved = np.less_equal(ef, 0.)  # Negative errors
     # Clip the flux values to avoid overflows
-    f = clip(f, 1e-100, 1e10)
-    ef = clip(ef, 1e-100, 1e10)
-    nonobserved += equal(ef, 1e10)
+    f = np.clip(f, 1e-100, 1e10)
+    ef = np.clip(ef, 1e-100, 1e10)
+    nonobserved += np.equal(ef, 1e10)
     # Less than sn_min sigma detections: consider non-detections
-    nondetected += less_equal(old_div(f, ef), sn_min)
+    nondetected += np.less_equal(old_div(f, ef), sn_min)
 
-    detected = logical_not(nondetected + nonobserved)
+    detected = np.logical_not(nondetected + nonobserved)
 
-    m = zeros(len(f), float)
-    em = zeros(len(ef), float)
+    m = np.zeros(len(f), float)
+    em = np.zeros(len(ef), float)
 
-    m = where(detected, -2.5 * log10(f) + zp, m)
-    m = where(nondetected, 99., m)
-    m = where(nonobserved, -99., m)
+    m = np.where(detected, -2.5 * log10(f) + zp, m)
+    m = np.where(nondetected, 99., m)
+    m = np.where(nonobserved, -99., m)
 
-    em = where(detected, 2.5 * log10(1. + old_div(ef, f)), em)
-    #em = where(nondetected,2.5*log10(ef)-zp,em)
-    em = where(nondetected, zp - 2.5 * log10(ef), em)
-    # print "NOW WITH CORRECT SIGN FOR em"
-    em = where(nonobserved, 0., em)
+    em = np.where(detected, 2.5 * log10(1. + old_div(ef, f)), em)
+    em = np.where(nondetected, zp - 2.5 * log10(ef), em)
+    em = np.where(nonobserved, 0., em)
     return m, em
-
-
-# NOTE PLACEMENT OF THIS LINE IS IMPORTANT
-# coeio ALSO IMPORTS FROM coetools (THIS MODULE)
-# SO TO AVOID AN INFINITE LOOP, coeio ONLY LOADS FROM coetools
-#  THOSE FUNCTIONS DEFINED BEFORE coeio IS LOADED
-from .coeio import *
-#from smooth import *
-import string  # LOAD THIS AFTER numpy, BECAUSE numpy HAS ITS OWN string
-from numpy.random import *
-from .compress2 import compress2 as compress
-from .MLab_coe import *  # sum should be add.reduce

@@ -21,28 +21,24 @@ from __future__ import absolute_import
 # HAD TO REMOVE RandomArray BECAUSE OF AN ERROR:
 #   ImportError: ld.so.1: python: fatal: /home/coe/python/ranlib.so: wrong ELF data format: ELFDATA2LS
 
-#from Numeric import *
 from builtins import map
 from builtins import range
 from builtins import object
 from past.utils import old_div
-from numpy import *
-from .compress2 import compress2 as compress
+import numpy as np
 from bisect import bisect
 from scipy.integrate import quad
 from scipy.special import erf
-from numpy.random import *  # random
-#from biggles import *
+from numpy import random
 import string
-
-try:
-    from roman import roman  # Roman numerals
-except:
-    pass
+from numpy.linalg import eig, svd
+from scipy.optimize import golden
+import numpy.random as RandomArray
+import math
 
 
 def argmin2d(a):
-    i = argmin(a.flat)
+    i = np.argmin(a.flat)
     ny, nx = a.shape
     iy = old_div(i, nx)
     ix = i % nx
@@ -50,7 +46,7 @@ def argmin2d(a):
 
 
 def argmax2d(a):
-    i = argmax(a.flat)
+    i = np.argmax(a.flat)
     ny, nx = a.shape
     iy = old_div(i, nx)
     ix = i % nx
@@ -61,7 +57,7 @@ def matrix_multiply(MM):
     """Multiplies a list of matrices: M[0] * M[1] * M[2]..."""
     P = MM[0]
     for M in MM[1:]:
-        P = dot(P, M)
+        P = np.dot(P, M)
     return P
 
 
@@ -71,15 +67,15 @@ def sinn(x):
     x > 0: sinh
     """
     if x < 0:
-        return sin(x)
+        return np.sin(x)
     else:
-        return sinh(x)
+        return np.sinh(x)
 
 
 def multiples(lo, hi, x=1, eps=1e-7):
     """Returns an array of the multiples of x between [lo,hi] inclusive"""
-    l = ceil(old_div((lo - eps), x)) * x
-    return arange(l, hi + eps, x)
+    l = np.ceil(old_div((lo - eps), x)) * x
+    return np.arange(l, hi + eps, x)
 
 
 def multiples2(lohi, x=1, eps=1e-7):
@@ -92,20 +88,20 @@ def multipleslog(lo, hi):
     """Returns an array of the log multiples between [lo,hi] inclusive.
     That didn't make sense, but what I'm trying to say is:
     multipleslog(2, 30) = 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30"""
-    loglo = log10(lo)
-    loghi = log10(hi)
+    loglo = np.log10(lo)
+    loghi = np.log10(hi)
     ll = multiples(loglo, loghi)
-    ll = concatenate([[loglo], ll, [loghi]])
+    ll = np.concatenate([[loglo], ll, [loghi]])
     mm = []
     for i in range(len(ll) - 1):
         lo = 10 ** ll[i]
         hi = 10 ** ll[i + 1]
-        ex = 10 ** floor(ll[i])
+        ex = 10 ** np.floor(ll[i])
         m1 = multiples(lo, hi, ex)
         if len(mm):
             if close(m1[0], mm[-1]):
                 m1 = m1[1:]
-        mm = concatenate([mm, m1])
+        mm = np.concatenate([mm, m1])
     return mm
 
 
@@ -120,20 +116,20 @@ def multiples2log(lohi):
 def onlyids(data, ids):
     """ALTERS ARRAY data TO INCLUDE ONLY NUMBERS IN ids
     ALL OTHER VALUES SET TO zero"""
-    keys = arange(data.size)
+    keys = np.arange(data.size)
 
-    keysc = compress(data.flat, keys)
-    valsc = compress(data.flat, data.flat)
+    keysc = np.compress(data.flat, keys)
+    valsc = np.compress(data.flat, data.flat)
 
-    mask = zeros(data.size)
+    mask = np.zeros(data.size)
     for id in ids:
-        ee = equal(valsc, id)
-        mask = logical_or(mask, ee)
+        ee = np.equal(valsc, id)
+        mask = np.logical_or(mask, ee)
 
-    keyscm = compress(mask, keysc)
-    valscm = compress(mask, valsc)
+    keyscm = np.compress(mask, keysc)
+    valscm = np.compress(mask, valsc)
 
-    datanew = zeros(data.shape)
+    datanew = np.zeros(data.shape)
     datanew.put(keyscm, valscm)
 
     return datanew
@@ -150,7 +146,7 @@ def base(b, nums):
     nums.reverse()
     x = 0
     for i, num in enumerate(nums):
-        x += array(num) * b**i
+        x += np.array(num) * b**i
     return x
 
 
@@ -304,7 +300,7 @@ def minmax(x, range=None):
     if range:
         lo, hi = range
         good = between(lo, x, hi)
-        x = compress(good, x)
+        x = np.compress(good, x)
     return min(x), max(x)
 
 
@@ -338,7 +334,7 @@ def Psig(P, nsigma=1):
     Pl = cumsum(Pn)
     Pr = cumsum(Pn[::-1])
     n = len(P)
-    i = arange(n)
+    i = np.arange(n)
     il = interp(g, Pl, i)
     ir = interp(g, Pr, i)
     ir = n - ir
@@ -374,15 +370,9 @@ def gausst(nsigma=1):
     """FRACTION IN TAIL TO ONE SIDE OF nsigma"""
     return 1 - gaussp(nsigma)
 
-###
-# ~/glens/h0limits/gravlens/mock/1/ptdrawbox24dsepL0.py
-
-
-from scipy.optimize import golden
-
 
 def mom2(x, y):
-    return sqrt(old_div(total(x**2 * y), total(y)))
+    return np.sqrt(old_div(total(x**2 * y), total(y)))
 
 
 def mom2dx(dx, x, y):
@@ -396,12 +386,12 @@ def xsigmom(x, y):
 
 
 def testxsigmom():
-    x = mgrid[-5:5:100001j]
+    x = np.mgrid[-5:5:100001j]
     g = gauss1(abs(x - 0.98765), 0.123456789)
     print(xsig(x, g))
     print(xsigmom(x, g))
 
-    x = mgrid[-5:5:101j]
+    x = np.mgrid[-5:5:101j]
     g = gauss1(abs(x - 0.98765), 0.123456789)
     print(xsig(x, g))
     print(xsigmom(x, g))
@@ -411,7 +401,7 @@ def testxsigmom():
 
 def pick(x):
     n = len(x)
-    i = random_integers(n)
+    i = np.random_integers(n)
     return x[i - 1]
 
 
@@ -441,25 +431,25 @@ def hypotsq(dx, dy):
 
 
 def hypotn(x):
-    return sqrt(sum(x**2))
+    return np.sqrt(sum(x**2))
 
 
 def hypotnn(*x):
-    return hypotn(array(x))
+    return hypotn(np.array(x))
 
 #hypotnn(3, 4, 5)
 
 
 def hypotxy(x1, y1, x2, y2):
-    return hypot(x1 - x2, y1 - y2)
+    return np.hypot(x1 - x2, y1 - y2)
 
 
 def hypotinvn(x):
-    return old_div(1, sqrt(sum(old_div(1., x**2))))
+    return old_div(1, np.sqrt(sum(old_div(1., x**2))))
 
 
 def hypotinvnn(*x):
-    return hypotinvn(array(x))
+    return hypotinvn(np.array(x))
 
 
 def hypotinv(x, y):
@@ -470,11 +460,11 @@ def subtend(x1, y1, x2, y2):
     """ANGLE SUBTENDED BY TWO VECTORS (wrt THE ORIGIN)"""
     # v1 (dot) v2 = |v1| |v2| cos(theta)
     # d = r1 r2 cos(theta)
-    d = dot([x1, y1], [x2, y2])
-    r1 = hypot(x1, y1)
-    r2 = hypot(x2, y2)
+    d = np.dot([x1, y1], [x2, y2])
+    r1 = np.hypot(x1, y1)
+    r2 = np.hypot(x2, y2)
     costheta = old_div(d, (r1 * r2))
-    theta = arccos(costheta)
+    theta = np.arccos(costheta)
     return theta
 
 
@@ -484,7 +474,7 @@ def subtends(x, y):
     for i in range(n - 1):
         for j in range(i + 1, n):
             dd.append(subtend(x[i], y[i], x[j], y[j]))
-    return array(dd)
+    return np.array(dd)
 
 
 def distances(x, y):
@@ -493,7 +483,7 @@ def distances(x, y):
     for i in range(n - 1):
         for j in range(i + 1, n):
             dd.append(hypot(x[i] - x[j], y[i] - y[j]))
-    return array(dd)
+    return np.array(dd)
 
 
 def differences(x):
@@ -502,7 +492,7 @@ def differences(x):
     for i in range(n - 1):
         for j in range(i + 1, n):
             dd.append(x[i] - x[j])
-    return array(dd)
+    return np.array(dd)
 
 
 def nrange(x, n=100):
@@ -529,26 +519,26 @@ def within(A, xc, yc, ro, yesorno=0):  # --DC
     BUT ARE AN IMPROVEMENT OVER NOT USING THEM AT ALL!
     TO TURN OFF FRACTIONS AND JUST RETURN True/False, SET yesorno=1"""
     ny, nx = A.shape
-    a = ones((ny, nx))
-    y = arange(ny)
-    x = arange(nx)
-    x, y = meshgrid(x, y)
+    a = np.ones((ny, nx))
+    y = np.arange(ny)
+    x = np.arange(nx)
+    x, y = np.meshgrid(x, y)
     x = x - xc + 0.
     y = y - yc + 0.
-    r = hypot(x, y)
+    r = np.hypot(x, y)
     xy = abs(divsafe(x, y, nan=0))
     yx = abs(divsafe(y, x, nan=0))
     m = min([xy, yx])
-    dr = hypot(1, m)  # = 1 ON AXES, sqrt(2) ON DIAGONALS
+    dr = np.hypot(1, m)  # = 1 ON AXES, sqrt(2) ON DIAGONALS
 
     if (ro - xc > 0.5) or (ro - yc > 0.5) \
             or (ro + xc > nx - 0.5) or (ro + yc > ny - 0.5):
         print('WARNING: CIRCLE EXTENDS BEYOND BOX IN MLab_coe.within')
 
     if yesorno:
-        v = less_equal(r, ro)  # TRUE OR FALSE, WITHOUT FRACTIONS
+        v = np.less_equal(r, ro)  # TRUE OR FALSE, WITHOUT FRACTIONS
     else:
-        v = less_equal(r, ro - 0.5 * dr) * 1
+        v = np.less_equal(r, ro - 0.5 * dr) * 1
         v = v + between(ro - 0.5 * dr, r, ro + 0.5 * dr) * \
             (ro + 0.5 * dr - r) / dr
 
@@ -572,7 +562,7 @@ def floatin(x, l, ndec=3):
     """IS x IN THE LIST l?
     WHO KNOWS WITH FLOATING POINTS!"""
     x = int(x * 10**ndec + 0.1)
-    l = (array(l) * 10**ndec + 0.1).astype(int).tolist()
+    l = (np.array(l) * 10**ndec + 0.1).astype(int).tolist()
     return x in l
 
 
@@ -580,7 +570,7 @@ def floatindex(x, l, ndec=3):
     """IS x IN THE LIST l?
     WHO KNOWS WITH FLOATING POINTS!"""
     x = int(x * 10**ndec + 0.1)
-    l = (array(l) * 10**ndec + 0.1).astype(int).tolist()
+    l = (np.array(l) * 10**ndec + 0.1).astype(int).tolist()
     return l.index(x)
 
 
@@ -600,10 +590,10 @@ def magnify(a, n):
     667788
     """
     ny, nx = a.shape
-    a = repeat(a, n**2)
-    a = reshape(a, (ny, nx, n, n))
-    a = transpose(a, (0, 2, 1, 3))
-    a = reshape(a, (n * ny, n * nx))
+    a = np.repeat(a, n**2)
+    a = np.reshape(a, (ny, nx, n, n))
+    a = np.transpose(a, (0, 2, 1, 3))
+    a = np.reshape(a, (n * ny, n * nx))
     return a
 
 
@@ -615,31 +605,22 @@ def demagnify(a, n, func='mean'):
     345
     678
     """
-    ny, nx = old_div(array(a.shape), n)
+    ny, nx = old_div(np.array(a.shape), n)
     a = a[:ny * 8, :nx * 8]  # Trim if not even multiples
-    a = reshape(a, (ny, n, nx, n))
-    a = transpose(a, (0, 2, 1, 3))
-    a = reshape(a, (ny, nx, n * n))
-    a = transpose(a, (2, 0, 1))
+    a = np.reshape(a, (ny, n, nx, n))
+    a = np.transpose(a, (0, 2, 1, 3))
+    a = np.reshape(a, (ny, nx, n * n))
+    a = np.transpose(a, (2, 0, 1))
     exec('a = %s(a)' % func)
     return a
 
 # Elementary Matrices
-
-# zeros is from matrixmodule in C
-# ones is from Numeric.py
-
-
-import numpy.random as RandomArray
-import math
 
 
 def listo(x):
     if singlevalue(x):
         x = [x]
     return x
-
-# ~/glens/h0limits/scatterrea.py
 
 
 def insidepoly1(xp, yp, x, y):
@@ -675,8 +656,8 @@ def insidepoly(xp, yp, xx, yy):
     """DETERMINES WHETHER THE POINTS (xx, yy)
     ARE INSIDE THE CONVEX POLYGON DELIMITED BY (xp, yp)"""
     xp, yp = CCWsort(xp, yp)
-    xx = ravel(listo(xx))
-    yy = ravel(listo(yy))
+    xx = np.ravel(listo(xx))
+    yy = np.ravel(listo(yy))
     inhull = []
     for i in range(len(xx)):
         if i and not (i % 10000):
@@ -684,7 +665,7 @@ def insidepoly(xp, yp, xx, yy):
         inhull1 = insidepoly1(xp, yp, xx[i], yy[i])
         inhull.append(inhull1)
 
-    return array(inhull).astype(int)
+    return np.array(inhull).astype(int)
 
 
 # TESTED IN ~/glens/lenspoints/optdefl/sourceconstraints/testconvexhull.py
@@ -701,9 +682,9 @@ def insidepolyshwag(xp, yp, xx, yy):
 
     xo = mean(xp)
     yo = mean(yp)
-    xx = ravel(listo(xx))
-    yy = ravel(listo(yy))
-    inhull = ones(len(xx)).astype(int)
+    xx = np.ravel(listo(xx))
+    yy = np.ravel(listo(yy))
+    inhull = np.ones(len(xx)).astype(int)
     for i in range(len(xx)):
         if i and not (i % 10000):
             print('%d / %d' % (i, len(xx)))
@@ -725,10 +706,10 @@ def testinsidepoly():
     x = random(50) * N
     y = random(50) * N
     xh, yh = convexhull(x, y)
-    zz = arange(N)
-    xx, yy = meshgrid(zz, zz)
-    xx = ravel(xx)
-    yy = ravel(yy)
+    zz = np.arange(N)
+    xx, yy = np.meshgrid(zz, zz)
+    xx = np.ravel(xx)
+    yy = np.ravel(yy)
     inhull = insidepoly(xh, yh, xx, yy)
     figure(11)
     clf()
@@ -747,21 +728,21 @@ def p2p(x):  # DEFINED AS ptp IN MLab (BELOW)
 
 def rotate(x, y, ang):
     """ROTATES (x, y) BY ang RADIANS CCW"""
-    x2 = x * cos(ang) - y * sin(ang)
-    y2 = y * cos(ang) + x * sin(ang)
+    x2 = x * np.cos(ang) - y * np.sin(ang)
+    y2 = y * np.cos(ang) + x * np.sin(ang)
     return x2, y2
 
 
 def rotdeg(x, y, ang):
     """ROTATES (x, y) BY ang DEGREES CCW"""
-    return rotate(x, y, ang / 180. * pi)
+    return np.rotate(x, y, ang / 180. * np.pi)
 
 
 def linefit(x1, y1, x2, y2):
     """y = mx + b FIT TO TWO POINTS"""
     if x2 == x1:
-        m = Inf
-        b = NaN
+        m = np.Inf
+        b = np.NaN
     else:
         m = old_div((y2 - y1), (x2 - x1))
         b = y1 - m * x1
@@ -893,7 +874,7 @@ def convexhull(x, y, rep=1, nprev=0):
     while ngood < len(x) + 1:
         dx = x[1] - xo
         dy = y[1] - yo
-        dr = hypot(dx, dy)
+        dr = np.hypot(dx, dy)
         dx = dx * dmax / dr
         dy = dy * dmax / dr
         x1 = xo - dx
@@ -906,27 +887,27 @@ def convexhull(x, y, rep=1, nprev=0):
             y.append(y.pop(0))
             ngood += 1
 
-    x = array(x)
-    y = array(y)
+    x = np.array(x)
+    y = np.array(y)
 
     # REPEAT UNTIL CONVERGENCE
     if (nprev == 0) or (len(x) < nprev):
         x, y = convexhull(x, y, nprev=len(x))
 
     if rep:
-        x = concatenate((x, [x[0]]))
-        y = concatenate((y, [y[0]]))
+        x = np.concatenate((x, [x[0]]))
+        y = np.concatenate((y, [y[0]]))
 
     return x, y
 
 
 def gauss(r, sig=1., normsum=1):
     """GAUSSIAN NORMALIZED SUCH THAT AREA=1"""
-    r = clip(old_div(r, float(sig)), 0, 10)
-    G = exp(-0.5 * r**2)
-    G = where(less(r, 10), G, 0)
+    r = np.clip(old_div(r, float(sig)), 0, 10)
+    G = np.exp(-0.5 * r**2)
+    G = np.where(np.less(r, 10), G, 0)
     if normsum:
-        G = G * 0.5 / (pi * sig**2)
+        G = G * 0.5 / (np.pi * sig**2)
     return G
 
 
@@ -938,8 +919,8 @@ def gauss1(r, sig=1.):
 def atanxy(x, y, degrees=0):
     """ANGLE CCW FROM x-axis"""
     theta = arctan(divsafe(y, x, inf=1e30, nan=0))
-    theta = where(less(x, 0), theta + pi, theta)
-    theta = where(logical_and(greater(x, 0), less(y, 0)),
+    theta = np.where(np.less(x, 0), theta + pi, theta)
+    theta = np.where(logical_and(np.greater(x, 0), np.less(y, 0)),
                   theta + 2 * pi, theta)
     if degrees:
         theta = theta * 180. / pi
@@ -986,7 +967,7 @@ def dotprod(a, b):
 def triarea(x, y, dir=0):
     """RETURNS THE AREA OF A TRIANGLE GIVEN THE COORDINATES OF ITS VERTICES
     A = 0.5 * | u X v |
-    where u & v are vectors pointing from one vertex to the other two
+    np.where u & v are vectors pointing from one vertex to the other two
     and X is the cross-product
     The dir flag lets you retain the sign (can tell if triangle is flipped)"""
     ux = x[1] - x[0]
@@ -1005,7 +986,7 @@ def CCWsort(x, y):
     xc = mean(x)
     yc = mean(y)
     ang = atanxy(x - xc, y - yc)
-    SI = array(argsort(ang))
+    SI = np.array(argsort(ang))
     x2 = x.take(SI, 0)
     y2 = y.take(SI, 0)
     return x2, y2
@@ -1035,7 +1016,7 @@ def even(n):
 
 def fpart(x):
     """FRACTIONAL PART OF A REAL NUMBER"""
-    if type(x) in [array, list]:
+    if type(x) in [np.array, list]:
         if len(x) == 1:
             x = x[0]
     return math.modf(x)[0]
@@ -1050,39 +1031,39 @@ def sigrange(x, nsigma=1):
 def sqrtsafe(x):
     """sqrt(x) OR 0 IF x < 0"""
     x = clip2(x, 0, None)
-    return sqrt(x)
+    return np.sqrt(x)
 
 
 def sgn(a):
-    return where(a, where(greater(a, 0), 1, -1), 0)
+    return np.where(a, np.where(np.greater(a, 0), 1, -1), 0)
 
 
 def sym8(a):
     """OKAY, SO THIS ISN'T QUITE RADIAL SYMMETRY..."""
-    x = a + flipud(a) + fliplr(a) + transpose(a) + \
-        rot90(transpose(a), 2) + rot90(a, 1) + rot90(a, 2) + rot90(a, 3)
+    x = a + flipud(a) + fliplr(a) + np.transpose(a) + \
+        rot90(np.transpose(a), 2) + rot90(a, 1) + rot90(a, 2) + rot90(a, 3)
     return old_div(x, 8.)
 
 # def divsafe(a, b, inf=1e30, nan=0.):
 
 
-def divsafe(a, b, inf=Inf, nan=NaN):
+def divsafe(a, b, inf=np.Inf, nan=np.NaN):
     """a / b with a / 0 = inf and 0 / 0 = nan"""
-    a = array(a).astype(float)
-    b = array(b).astype(float)
-    asgn = greater_equal(a, 0) * 2 - 1.
-    bsgn = greater_equal(b, 0) * 2 - 1.
+    a = np.array(a).astype(float)
+    b = np.array(b).astype(float)
+    asgn = np.greater_equal(a, 0) * 2 - 1.
+    bsgn = np.greater_equal(b, 0) * 2 - 1.
     xsgn = asgn * bsgn
-    sgn = where(b, xsgn, asgn)
-    sgn = where(a, xsgn, bsgn)
-    babs = clip(abs(b), 1e-200, 1e9999)
+    sgn = np.where(b, xsgn, asgn)
+    sgn = np.where(a, xsgn, bsgn)
+    babs = np.clip(abs(b), 1e-200, 1e9999)
     bb = bsgn * babs
-    # return where(b, a / bb, where(a, Inf, NaN))
-    return where(b, old_div(a, bb), where(a, sgn * inf, nan))
+    # return np.where(b, a / bb, np.where(a, Inf, NaN))
+    return np.where(b, old_div(a, bb), np.where(a, sgn * inf, nan))
 
 
 def expsafe(x):
-    x = array(x)
+    x = np.array(x)
     y = []
     for xx in x:
         if xx > 708:
@@ -1094,7 +1075,7 @@ def expsafe(x):
     if len(y) == 1:
         return y[0]
     else:
-        return array(y)
+        return np.array(y)
 
 
 def floorint(x):
@@ -1109,7 +1090,7 @@ def roundint(x):
     if singlevalue(x):
         return(int(round(x)))
     else:
-        return asarray(x).round().astype(int)
+        return np.asarray(x).round().astype(int)
 
 
 intround = roundint
@@ -1128,13 +1109,13 @@ def roundn(x, ndec=0):
         rr = []
         for xx in x:
             rr.append(roundn(xx, ndec))
-        return array(rr)
+        return np.array(rr)
 
 
 def percentile(p, x):
     x = sort(x)
     i = p * (len(x) - 1.)
-    return interp(i, arange(len(x)), x)
+    return interp(i, np.arange(len(x)), x)
 
 
 def percentile2(v, x):
@@ -1142,29 +1123,29 @@ def percentile2(v, x):
 
 
 def logical(x):
-    return where(x, 1, 0)
+    return np.where(x, 1, 0)
 
 
 def element_or(*l):
-    """l is a list/tuple of arrays
+    """l is a list/tuple of np.arrays
     USAGE: x = element_or(a, b, c)"""
-    x = where(l[0], l[0], l[1])
+    x = np.where(l[0], l[0], l[1])
     for i in range(2, len(l)):
-        x = where(x, x, l[2])
+        x = np.where(x, x, l[2])
     return x
 
 
 def log2(x, loexp=''):
     if loexp != '':
         x = clip2(x, 2**loexp, None)
-    return old_div(log10(x), log10(2))
+    return old_div(np.log10(x), np.log10(2))
 
 
 def log10clip(x, loexp, hiexp=None):
     if hiexp == None:
-        return log10(clip2(x, 10.**loexp, None))
+        return np.log10(clip2(x, 10.**loexp, None))
     else:
-        return log10(clip2(x, 10.**loexp, 10.**hiexp))
+        return np.log10(clip2(x, 10.**loexp, 10.**hiexp))
 
 
 def lnclip(x, loexp):
@@ -1234,8 +1215,8 @@ def linregrobust(x, y):
     dy = y - (a * x + b)
     #s = std2(dy)
     s = std(dy)
-    good = less(abs(dy), 3 * s)
-    x, y = compress(good, (x, y))
+    good = np.less(abs(dy), 3 * s)
+    x, y = np.compress(good, (x, y))
     ng = len(x)
     if ng < n:
         print('REMOVED %d OUTLIER(S), RECALCULATING linreg' % (n - ng))
@@ -1277,9 +1258,9 @@ def count(a):
 def rep(a):
     """RETURNS A DICTIONARY WITH THE NUMBER OF TIMES EACH ID IS REPEATED
     1 INDICATES THE VALUE APPEARED TWICE (WAS REPEATED ONCE)"""
-    a = sort(a)
+    a = np.sort(a)
     d = a[1:] - a[:-1]
-    c = compress(logical_not(d), a)
+    c = np.compress(np.logical_not(d), a)
     if c.any():
         bins = norep(c)
         h = histogram(c, bins)
@@ -1293,21 +1274,21 @@ def rep(a):
 
 def norep(a):
     """RETURNS a w/o REPETITIONS, i.e. THE MEMBERS OF a"""
-    a = sort(a)
+    a = np.sort(a)
     d = a[1:] - a[:-1]
-    c = compress(d, a)
-    x = concatenate((c, [a[-1]]))
+    c = np.compress(d, a)
+    x = np.concatenate((c, [a[-1]]))
     return x
 ##     l = []
 # for x in ravel(a):
 # if x not in l:
 # l.append(x)
-# return array(l)
+# return np.array(l)
 
 
 def norepxy(x, y, tol=1e-8):
     """REMOVES REPEATS IN (x,y) LISTS -- WITHIN tol EQUALS MATCH"""
-    if type(x) == type(array([])):
+    if type(x) == type(np.array([])):
         x = x.tolist()
         y = y.tolist()
     else:  # DON'T MODIFY ORIGINAL INPUT LISTS
@@ -1341,9 +1322,9 @@ def between(lo, x, hi):  # --DC
         except:
             good = 1
     else:
-        good = greater(x, lo)
+        good = np.greater(x, lo)
     if hi not in [None, '']:
-        good = good * less(x, hi)
+        good = good * np.less(x, hi)
     return good
 
 
@@ -1373,23 +1354,23 @@ def interp(x, xdata, ydata, silent=0, extrap=0):  # NEW VERSION!
     SI = argsort(xdata)
     xdata = xdata.take(SI, 0)
     ydata = ydata.take(SI, 0)
-    ii = searchsorted(xdata, x)
+    ii = np.searchsorted(xdata, x)
     if singlevalue(ii):
-        ii = array([ii])
+        ii = np.array([ii])
     # 0 = before all
     # len(xdata) = after all
     n = len(xdata)
     if extrap:
-        i2 = clip(ii,   1, n - 1)
+        i2 = np.clip(ii,   1, n - 1)
         i1 = i2 - 1
     else:
-        i2 = clip(ii,   0, n - 1)
-        i1 = clip(ii - 1, 0, n - 1)
+        i2 = np.clip(ii,   0, n - 1)
+        i1 = np.clip(ii - 1, 0, n - 1)
 
-    x2 = take(xdata, i2)
-    x1 = take(xdata, i1)
-    y2 = take(ydata, i2)
-    y1 = take(ydata, i1)
+    x2 = np.take(xdata, i2)
+    x1 = np.take(xdata, i1)
+    y2 = np.take(ydata, i2)
+    y1 = np.take(ydata, i1)
     # m = (y2 - y1) / (x2 - x1)
     m = divsafe(y2 - y1, x2 - x1, nan=0)
     b = y1 - m * x1
@@ -1404,7 +1385,7 @@ interpn = interp
 
 def interp1(x, xdata, ydata, silent=0):  # --DC
     """DETERMINES y AS LINEAR INTERPOLATION OF 2 NEAREST ydata"""
-    SI = argsort(xdata)
+    SI = np.argsort(xdata)
     # NEW numpy's take IS ACTING FUNNY
     # NO DEFAULT AXIS, MUST BE SET EXPLICITLY TO 0
     xdata = xdata.take(SI, 0).astype(float).tolist()
@@ -1434,7 +1415,7 @@ def interpn1(x, xdata, ydata, silent=0):  # --DC
     yout = []
     for x1 in x:
         yout.append(interp(x1, xdata, ydata, silent=silent))
-    return array(yout)
+    return np.array(yout)
 
 
 def interp2(x, xdata, ydata):  # --DC
@@ -1496,8 +1477,8 @@ def eye(N, M=None, k=0, dtype=None):
     if type(M) == type('d'):
         typecode = M
         M = N
-    m = equal(subtract.outer(arange(N), arange(M)), -k)
-    return asarray(m, dtype=typecode)
+    m = np.equal(subtract.outer(arange(N), arange(M)), -k)
+    return np.asarray(m, dtype=typecode)
 
 
 def tri(N, M=None, k=0, dtype=None):
@@ -1509,7 +1490,7 @@ def tri(N, M=None, k=0, dtype=None):
     if type(M) == type('d'):
         typecode = M
         M = N
-    m = greater_equal(subtract.outer(arange(N), arange(M)), -k)
+    m = np.greater_equal(subtract.outer(arange(N), arange(M)), -k)
     return m.astype(typecode)
 
 # Matrix manipulation
@@ -1519,17 +1500,17 @@ def diag(v, k=0):
     """diag(v,k=0) returns the k-th diagonal if v is a matrix or
     returns a matrix with v as the k-th diagonal if v is a vector.
     """
-    v = asarray(v)
+    v = np.asarray(v)
     s = v.shape
     if len(s) == 1:
         n = s[0] + abs(k)
         if k > 0:
-            v = concatenate((zeros(k, v.dtype.char), v))
+            v = np.concatenate((zeros(k, v.dtype.char), v))
         elif k < 0:
-            v = concatenate((v, zeros(-k, v.dtype.char)))
+            v = np.concatenate((v, zeros(-k, v.dtype.char)))
         return eye(n, k=k) * v
     elif len(s) == 2:
-        v = add.reduce(eye(s[0], s[1], k=k) * v)
+        v = np.add.reduce(eye(s[0], s[1], k=k) * v)
         if k > 0:
             return v[k:]
         elif k < 0:
@@ -1545,7 +1526,7 @@ def fliplr(m):
     columns flipped in the left/right direction.  Only works with 2-D
     arrays.
     """
-    m = asarray(m)
+    m = np.asarray(m)
     if len(m.shape) != 2:
         raise ValueError("Input must be 2-D.")
     return m[:, ::-1]
@@ -1555,7 +1536,7 @@ def flipud(m):
     """flipud(m) returns a 2-D matrix with the columns preserved and
     rows flipped in the up/down direction.  Only works with 2-D arrays.
     """
-    m = asarray(m)
+    m = np.asarray(m)
     if len(m.shape) != 2:
         raise ValueError("Input must be 2-D.")
     return m[::-1]
@@ -1567,7 +1548,7 @@ def rot90(m, k=1):
     """rot90(m,k=1) returns the matrix found by rotating m by k*90 degrees
     in the counterclockwise direction.
     """
-    m = asarray(m)
+    m = np.asarray(m)
     if len(m.shape) != 2:
         raise ValueError("Input must be 2-D.")
     k = k % 4
@@ -1594,7 +1575,7 @@ def tril(m, k=0):
     m.  k=0 is the main diagonal, k > 0 is above and k < 0 is below the main
     diagonal.
     """
-    m = asarray(m)
+    m = np.asarray(m)
     return tri(m.shape[0], m.shape[1], k=k, dtype=m.dtype.char) * m
 
 
@@ -1603,7 +1584,7 @@ def triu(m, k=0):
     m.  k=0 is the main diagonal, k > 0 is above and k < 0 is below the main
     diagonal.
     """
-    m = asarray(m)
+    m = np.asarray(m)
     return (1 - tri(m.shape[0], m.shape[1], k - 1, m.dtype.char)) * m
 
 # Data analysis
@@ -1614,7 +1595,7 @@ def triu(m, k=0):
 def max(m):
     """max(m) returns the maximum along the first dimension of m.
     """
-    return maximum.reduce(m)
+    return np.maximum.reduce(m)
 
 
 def min(m):
@@ -1628,22 +1609,22 @@ def min(m):
 def ptp(m):
     """ptp(m) returns the maximum - minimum along the first dimension of m.
     """
-    return max(m) - min(m)
+    return np.max(m) - np.min(m)
 
 
 def mean1(m):
     """mean(m) returns the mean along the first dimension of m.  Note:  if m is
     an integer array, integer division will occur.
     """
-    return old_div(add.reduce(m), len(m))
+    return old_div(np.add.reduce(m), len(m))
 
 
 def mean(m, axis=0):
     """mean(m) returns the mean along the first dimension of m.  Note:  if m is
     an integer array, integer division will occur.
     """
-    m = asarray(m)
-    return old_div(add.reduce(m, axis=axis), m.shape[axis])
+    m = np.asarray(m)
+    return old_div(np.add.reduce(m, axis=axis), m.shape[axis])
 
 
 def meangeom(m):
@@ -1661,7 +1642,7 @@ def msort(m):
 def median(m):
     """median(m) returns the median of m along the first dimension of m.
     """
-    m = asarray(m)
+    m = np.asarray(m)
     if m.shape[0] & 1:
         return msort(m)[old_div(m.shape[0], 2)]  # ODD # OF ELEMENTS
     else:
@@ -1681,7 +1662,7 @@ def std(m):
     dimension of m.  The result is unbiased meaning division by len(m)-1.
     """
     mu = mean(m)
-    return old_div(sqrt(add.reduce(pow(m - mu, 2))), sqrt(len(m) - 1.0))
+    return old_div(sqrt(np.add.reduce(pow(m - mu, 2))), sqrt(len(m) - 1.0))
 
 
 stddev = std
@@ -1691,7 +1672,7 @@ def meanstd(m):
     """meanstd(m) returns the mean and uncertainty = std / sqrt(N-1)
     """
     mu = mean(m)
-    dmu = old_div(sqrt(add.reduce(pow(m - mu, 2))), (len(m) - 1.0))
+    dmu = old_div(sqrt(np.add.reduce(pow(m - mu, 2))), (len(m) - 1.0))
     return mu, dmu
 
 
@@ -1704,12 +1685,12 @@ def avgstd2(m):  # --DC
     while not done:
         n = len(m)
         mu = mean(m)
-        sig = old_div(sqrt(add.reduce(pow(m - mu, 2))), sqrt(n - 1.0))
-        good = greater(m, mu - 3 * sig) * less(m, mu + 3 * sig)
-        m = compress(good, m)
+        sig = old_div(sqrt(np.add.reduce(pow(m - mu, 2))), sqrt(n - 1.0))
+        good = np.greater(m, mu - 3 * sig) * np.less(m, mu + 3 * sig)
+        m = np.compress(good, m)
         done = sum(good) == n
 
-    return [mu, old_div(sqrt(add.reduce(pow(m - mu, 2))), sqrt(len(m) - 1.0))]
+    return [mu, old_div(sqrt(np.add.reduce(pow(m - mu, 2))), sqrt(len(m) - 1.0))]
 
 
 def std2(m):  # --DC
@@ -1729,32 +1710,6 @@ def weightedavg(x, w):
 
 
 weightedmean = weightedavg
-
-# def thetaavgstd1(theta):
-# """SHWAG VERSION: WON'T WORK IF THETA SPANS A RANGE > pi
-# CALCULATES THE AVERAGE & STANDARD DEVIATION IN A LIST (OR 1-D ARRAY) OF THETA (ANGLE) MEASUREMENTS
-# RETURNS THE LIST [avg, std]
-# NEED A NEW CODE TO HANDLE THAT: ?INCREASING WEIGHTED AVERAGES (2 POINTS AT A TIME)?"""
-# if len(theta) == 1:
-# return([theta[0], 999])
-# else:
-# PUT ALL theta IN [0, 2 * pi]
-# for i in range(len(theta)):
-# if theta[i] < 0:
-##              theta[i] = theta[i] + 2 * pi
-# if max(theta) - min(theta) > pi:
-# "PUT ALL THETA IN [-pi, pi]"
-# for i in range(len(theta)):
-# if theta[i] > pi:
-##                  theta[i] = theta[i] - 2 * pi
-# print theta
-# if max(theta) - min(theta) > pi:
-# print "THETA RANGE TOO BIG FOR thetaavg"
-# return([999, 999])
-# else:
-##          thavg = mean(theta)
-##          thstd = sqrt( sum( (theta - thavg) ** 2 ) / (len(theta) - 1.) )
-# return([thavg, thstd])
 
 
 def thetaavgstd(theta):
@@ -1786,15 +1741,15 @@ def clip2(m, m_min=None, m_max=None):
         m_min = min(m)
     if m_max == None:
         m_max = max(m)
-    return clip(m, m_min, m_max)
+    return np.clip(m, m_min, m_max)
 
 
 # def sum(m):
 # """sum(m) returns the sum of the elements along the first
 # dimension of m.
 # """
-# return add.reduce(m)
-sum = add.reduce  # ALLOWS FOR AXIS TO BE INPUT --DC
+# return np.add.reduce(m)
+sum = np.add.reduce  # ALLOWS FOR AXIS TO BE INPUT --DC
 
 
 def total(m):
@@ -1865,7 +1820,7 @@ def xbins(x):
     d = shorten(x)
     da = x[1] - x[0]
     db = x[-1] - x[-2]
-    d = concatenate(([x[0] - old_div(da, 2.)], d, [x[-1] + old_div(db, 2.)]))
+    d = np.concatenate(([x[0] - old_div(da, 2.)], d, [x[-1] + old_div(db, 2.)]))
     return d
 
 
@@ -1892,13 +1847,13 @@ def shorten(x, n=1):  # shrink
 
 def lengthen(x, n):  # expand
     """lengthen([0, 1, 5], 4) ==> 0, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5"""
-    x = array(x)
+    x = np.array(x)
     d = diff(x)
     i = old_div(arange(n), float(n))
     o = outer(i, d)
     o = o + x[:-1]
     o = ravel(transpose(o))
-    o = concatenate((o, [x[-1]]))
+    o = np.concatenate((o, [x[-1]]))
     return o
 
 
@@ -1930,7 +1885,7 @@ def grad(m):
     ax = old_div((m[:, 2:] - m[:, :-2]), 2.)     # (N,   N-2)
     ay = ay[:, 1:-1]                    # (N-2, N-2)
     ax = ax[1:-1, :]
-    return array([ax, ay])
+    return np.array([ax, ay])
 
 
 def laplacian(m):
@@ -1964,10 +1919,10 @@ def corrcoef(x, y=None):
 
 
 def cov(m, y=None):
-    m = asarray(m)
+    m = np.asarray(m)
     mu = mean(m)
     if y != None:
-        m = concatenate((m, y))
+        m = np.concatenate((m, y))
     sum_cov = 0.0
     for v in m:
         sum_cov = sum_cov + multiply.outer(v, v)
@@ -1979,8 +1934,8 @@ def cov(m, y=None):
 
 def squeeze(a):
     "squeeze(a) removes any ones from the shape of a"
-    b = asarray(a.shape)
-    reshape(a, tuple(compress(not_equal(b, 1), b)))
+    b = np.asarray(a.shape)
+    reshape(a, tuple(np.compress(np.not_equal(b, 1), b)))
     return
 
 
@@ -2005,7 +1960,7 @@ def bartlett(M):
     """bartlett(M) returns the M-point Bartlett window.
     """
     n = arange(0, M)
-    return where(less_equal(n, old_div(M, 2.0)), 2.0 * n / M, 2.0 - 2.0 * n / M)
+    return np.where(np.less_equal(n, old_div(M, 2.0)), 2.0 * n / M, 2.0 - 2.0 * n / M)
 
 
 def hanning(M):
@@ -2025,25 +1980,12 @@ def hamming(M):
 def sinc(x):
     """sinc(x) returns sin(pi*x)/(pi*x) at all points of array x.
     """
-    return where(equal(x, 0.0), 1.0, old_div(sin(pi * x), (pi * x)))
-
-
-from numpy.linalg import eig, svd
-# def eig(v):
-#    """[x,v] = eig(m) returns the the eigenvalues of m in x and the corresponding
-#    eigenvectors in the rows of v.
-#    """
-#    return LinearAlgebra.eigenvectors(v)
-
-# def svd(v):
-#    """[u,x,v] = svd(m) return the singular value decomposition of m.
-#    """
-#    return LinearAlgebra.singular_value_decomposition(v)
+    return np.where(np.equal(x, 0.0), 1.0, old_div(sin(pi * x), (pi * x)))
 
 
 def histogram(a, bins):
     n = searchsorted(sort(a), bins)
-    n = concatenate([n, [len(a)]])
+    n = np.concatenate([n, [len(a)]])
     return n[1:] - n[:-1]
 
 
@@ -2057,11 +1999,11 @@ def cumhisto(a, da=1., amin=[], amax=[]):  # --DC
     if amax == []:
         amax = max(a)
     nnn = old_div((amax - amin), da)
-    if less(nnn - int(nnn), 1e-4):
+    if np.less(nnn - int(nnn), 1e-4):
         amax = amax + da
     bins = arange(amin, amax + da, da)
     n = searchsorted(sort(a), bins)
-    n = array(list(map(float, n)))
+    n = np.array(list(map(float, n)))
     return n[1:]
 
 
@@ -2093,12 +2035,12 @@ def histo(a, da=1., amin=[], amax=[]):  # --DC
     if amax == []:
         amax = max(a)
     nnn = old_div((amax - amin), da)
-    if less(nnn - int(nnn), 1e-4):
+    if np.less(nnn - int(nnn), 1e-4):
         amax = amax + da
-    bins = arange(amin, amax + da, da)
-    n = searchsorted(sort(a), bins)
-#    n=concatenate([n,[len(a)]])
-    n = array(list(map(float, n)))
+    bins = np.arange(amin, amax + da, da)
+    n = np.searchsorted(sort(a), bins)
+#    n=np.concatenate([n,[len(a)]])
+    n = np.array(list(map(float, n)))
 # print a
 # print bins
 # print n
@@ -2132,10 +2074,10 @@ def plothisto(a, da=1., amin=[], amax=[]):  # --DC
 
 def bargraphbiggles(x, y, fill=1, color='black', **other):
     n = len(x)
-    xx = repeat(x, 2)
+    xx = np.repeat(x, 2)
     y = y.astype(float)
-    z = array([0.])
-    yy = concatenate([z, repeat(y, 2), z])
+    z = np.array([0.])
+    yy = np.concatenate([z, np.repeat(y, 2), z])
     zz = yy * 0
 
     p = FramedPlot()
@@ -2148,10 +2090,10 @@ def bargraphbiggles(x, y, fill=1, color='black', **other):
 
 def BarGraph(x, y, fill=1, color='black', bottom=0, **other):
     n = len(x)
-    xx = repeat(x, 2)
+    xx = np.repeat(x, 2)
     y = y.astype(float)
-    z = array([0.])
-    yy = concatenate([z, repeat(y, 2), z])
+    z = np.array([0.])
+    yy = np.concatenate([z, np.repeat(y, 2), z])
     zz = yy * 0 + bottom
     if fill:
         return FillBetween(xx, yy, xx, zz, color=color)
@@ -2176,14 +2118,14 @@ def histob(a, da=1., amin=[], amax=[]):  # --DC
     # MAKE SURE 18 GOES IN THE 18-18.9999 bin (for da=1 anyway)
     amin = amin - 1e-4
     amax = amax + 1e-4
-    # if less(abs(amax - a[-1]), da*1e-4):
+    # if np.less(abs(amax - a[-1]), da*1e-4):
     nnn = old_div((amax - amin), da)
-    if less(nnn - int(nnn), 1e-4):
+    if np.less(nnn - int(nnn), 1e-4):
         amax = amax + da
     #bins = arange(amin,amax+da,da)
-    bins = arange(amin, amax + da, da)
-    n = searchsorted(sort(a), bins)
-    n = array(list(map(float, n)))
+    bins = np.arange(amin, amax + da, da)
+    n = np.searchsorted(sort(a), bins)
+    n = np.array(list(map(float, n)))
     n = n[1:] - n[:-1]
     return (bins, n)
 
@@ -2197,14 +2139,14 @@ def histov(a, bins, v, presorted=0):
     """Total of values (v) in bins
     (other historgrams just count number of elements in bins)"""
     if not presorted:
-        SI = argsort(a)
-        a = take(a, SI)
-        v = take(v, SI)
+        SI = np.argsort(a)
+        a = np.take(a, SI)
+        v = np.take(v, SI)
     vcum = cumsum(v)
-    i = searchsorted(a, bins)
+    i = np.searchsorted(a, bins)
     i = i[1:] - 1
     vcumi = vcum.take(i)
-    vcumi = concatenate([[0], vcumi])
+    vcumi = np.concatenate([[0], vcumi])
     vb = vcumi[1:] - vcumi[:-1]
     return vb
 
@@ -2217,12 +2159,10 @@ def isNaN(x):
 
 
 def isnan(x):
-    l = less(x, 0)
-    g = greater(x, 0)
-    e = equal(x, 0)
-    n = logical_and(logical_not(l), logical_not(g))
-    n = logical_and(n, logical_not(e))
+    l = np.less(x, 0)
+    g = np.greater(x, 0)
+    e = np.equal(x, 0)
+    n = np.logical_and(np.logical_not(l), np.logical_not(g))
+    n = np.logical_and(n, np.logical_not(e))
     return n
 
-#from coeplot2a import *
-# testinsidepoly()

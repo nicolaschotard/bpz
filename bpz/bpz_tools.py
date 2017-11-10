@@ -29,12 +29,12 @@ Vega = 'Vega_reference'
 eps = 1e-300
 eeps = log(eps)
 
-from .MLab_coe import log10 as log10a
+#from .MLab_coe import log10 as log10a
 
 
-def log10(x):
-    return log10a(x + eps)
-    # return log10clip(x, -33)
+#def log10(x):
+#    return log10a(x + eps)
+#    # return log10clip(x, -33)
 
 
 # This quantities are used by the AB files
@@ -112,17 +112,17 @@ def filter_fwhm(filter, ccd='yes'):
 
 def AB(flux):
     """AB magnitude from f_nu"""
-    return -2.5 * log10(flux) - 48.60
+    return -2.5 * np.log10(flux) - 48.60
 
 
 def flux2mag(flux):
     """Convert arbitrary flux to magnitude"""
-    return -2.5 * log10(flux)
+    return -2.5 * np.log10(flux)
 
 
 def Jy2AB(flux):
     """Convert flux in Jy to AB magnitudes"""
-    return -2.5 * log10(flux * 1e-23) - 48.60
+    return -2.5 * np.log10(flux * 1e-23) - 48.60
 
 
 def AB2Jy(ABmag):
@@ -137,7 +137,7 @@ def mag2flux(mag):
 
 def e_frac2mag(fracerr):
     """Convert fractionary flux error to mag error"""
-    return 2.5 * log10(1. + fracerr)
+    return 2.5 * np.log10(1. + fracerr)
 
 
 def e_mag2frac(errmag):
@@ -1084,7 +1084,8 @@ def prior(z, m, info='hdfn', nt=6, ninterp=0, x=None, y=None):
     m_step = 0.1
     # number of decimals kept
     accuracy = str(len(str(int(old_div(1., m_step)))) - 1)
-    exec('from prior_%s import *' % info)
+    exec('from .prior_%s import *' % info)
+    from . import prior_hdfn_gen
     global prior_dict
     try:
         len(prior_dict)
@@ -1101,9 +1102,9 @@ def prior(z, m, info='hdfn', nt=6, ninterp=0, x=None, y=None):
     m_dict = forma % m
     if m_dict not in prior_dict or info == 'lensing':  # if lensing, the magnitude alone is not enough
         if info != 'lensing':
-            prior_dict[m_dict] = function(z, float(m_dict), nt)
+            prior_dict[m_dict] = prior_hdfn_gen.function(z, float(m_dict), nt)
         else:
-            prior_dict[m_dict] = function(z, float(m_dict), nt, x, y)
+            prior_dict[m_dict] = prior_hdfn_gen.function(z, float(m_dict), nt, x, y)
         if ninterp:
             pp_i = prior_dict[m_dict]
             nz = pp_i.shape[0]
@@ -1280,13 +1281,13 @@ def sex2bpzmags(f, ef, zp=0., sn_min=1., m_lim=None):
     m = zeros(len(f)) * 1.
     em = zeros(len(ef)) * 1.
 
-    m = where(detected, -2.5 * log10(f) + zp, m)
+    m = where(detected, -2.5 * np.log10(f) + zp, m)
     m = where(nondetected, 99., m)
     m = where(nonobserved, -99., m)
 
-    em = where(detected, 2.5 * log10(1. + old_div(ef, f)), em)
+    em = where(detected, 2.5 * np.log10(1. + old_div(ef, f)), em)
     if not m_lim:
-        em = where(nondetected, -2.5 * log10(ef) + zp, em)
+        em = where(nondetected, -2.5 * np.log10(ef) + zp, em)
     else:
         em = where(nondetected, m_lim, em)
     em = where(nonobserved, 0., em)

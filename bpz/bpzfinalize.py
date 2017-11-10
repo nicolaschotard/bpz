@@ -38,9 +38,6 @@ for line in infile:
         npeaks = string.atoi(line[10])
         break
 
-#inchisq2 = inroot + '.chisq2'
-
-#outbpz = inroot + '_b.bpz'
 outbpz = inroot + '_bpz.cat'
 
 if npeaks == 1:
@@ -73,10 +70,6 @@ for iline in range(len(infile)):
 mybpz = loadvarswithclass(inbpz, labels=labels)
 
 mycat = loadvarswithclass(incat)
-#icat = loadvarswithclass('/home/coe/UDF/istel.cat')
-#icat = icat.takeids(mycat.id)
-#bpzchisq2 = loadvarswithclass(inchisq2)
-
 
 #################################
 # CHISQ2, nfdet, nfobs
@@ -119,16 +112,10 @@ if os.path.exists(inroot + '.flux_comparison'):
     chisq2 = where(equal(nfobs, 0), 999., chisq2)
     #################################
 
-    # print 'BPZ tb N_PEAKS BUG FIX'
-    #mybpz.tb = mybpz.tb + 0.667
-    #mybpz.tb2 = where(greater(mybpz.tb2, 0), mybpz.tb2 + 0.667, -1.)
-    #mybpz.tb3 = where(greater(mybpz.tb3, 0), mybpz.tb3 + 0.667, -1.)
-
     mybpz.add('chisq2', chisq2)
     mybpz.add('nfdet', nfdet)
     mybpz.add('nfobs', nfobs)
 
-#mybpz.add('jhgood', jhgood)
 if 'stel' in mycat.labels:
     mybpz.add('stel', mycat.stel)
 elif 'stellarity' in mycat.labels:
@@ -137,8 +124,7 @@ if 'maxsigisoaper' in mycat.labels:
     mybpz.add('sig', mycat.maxsigisoaper)
 if 'sig' in mycat.labels:
     mybpz.assign('sig', mycat.maxsigisoaper)
-#mybpz.add('x', mycat.x)
-#mybpz.add('y', mycat.y)
+
 if 'zspec' not in mybpz.labels:
     if 'zspec' in mycat.labels:
         mybpz.add('zspec', mycat.zspec)
@@ -147,33 +133,3 @@ if 'zspec' not in mybpz.labels:
             mybpz.add('zqual', mycat.zqual)
 print(mybpz.labels)
 mybpz.save(outbpz, maxy=None)
-
-##################
-
-# det
-# 0 < mag < 99
-# dmag > 0
-# fo > 0
-# efo -> 1.6e-8, e.g.
-
-# undet
-# mag = 99
-# dmag = -m_1sigma
-# fo = 0
-# efo = 0 -> 5e13, e.g.
-
-# unobs
-# mag = -99
-# dmag = 0
-# fo = 0
-# efo = inf (1e108)
-
-
-# original chisq usually matches this:
-## dfosq = ((ft - fo) / efo) ** 2
-## dfosqsum = sum(dfosq)
-
-## observed = less(efo, 1)
-## nfobs = sum(observed)
-
-## chisq = dfosqsum / (nfobs - 1.)

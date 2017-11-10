@@ -14,13 +14,13 @@ from builtins import map
 from builtins import input
 from builtins import range
 from past.utils import old_div
-from .useful import *
+from bpz import useful
 rolex = watch()
 rolex.set()
 
 #from Numeric import *
 from numpy import *
-from .bpz_tools import *
+from bpz import bpz_tools
 from string import *
 import os
 import glob

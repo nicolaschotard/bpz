@@ -14,18 +14,12 @@ from builtins import object
 import os
 import sys
 from types import *
-#from Numeric import *
 from numpy import *
-#from MLab import *
 from .MLab_coe import *
 from time import *
 from .spline import *
 from string import *  # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
-#import whrandom
 import random
-# To use the astrometrical functions defined below
-# try: import ephem
-# except: pass
 
 
 # If biggles installed allow the plot options in the tests
@@ -121,7 +115,7 @@ def get_str(file, cols=0, nrows='all'):
             break
         if lines[0] == '#':
             continue
-        pieces = split(lines)
+        pieces = lines.split()
         if len(pieces) == 0:
             continue
         for j in range(nvar):
@@ -222,7 +216,7 @@ def get_2Darray(file, cols='all', nrows='all', verbose='no'):
     if cols == 'all':
         # Get the number of columns in the file
         for line in open(file).readlines():
-            pieces = split(line)
+            pieces = line.split()
             if len(pieces) == 0:
                 continue
             if line[0] == '#':
@@ -294,10 +288,10 @@ def params_file(file):
     for line in open(file, 'r').readlines():
         if line[0] == ' ' or line[0] == '#':
             continue
-        halves = split(line, '#')
+        halves = line.split('#')
         # replace commas in case they're present
-        halves[0] = replace(halves[0], ',', ' ')
-        pieces = split(halves[0])
+        halves[0] = halves[0].replace(',', ' ')
+        pieces = halves[0].split()
         if len(pieces) == 0:
             continue
         key = pieces[0]
@@ -335,8 +329,8 @@ def params_commandline(lista):
         # replace commas in case they're present
         if key[0] == '-':
             key = key[1:]
-        lista[i + 1] = replace(lista[i + 1], ',', ' ')
-        values = tuple(split(lista[i + 1]))
+        lista[i + 1] = lista[i + 1].replace(',', ' ')
+        values = tuple(lista[i + 1].split())
         if len(values) < 1:
             mensaje = 'No value(s) for parameter  ' + key
             raise mensaje
@@ -351,7 +345,7 @@ def view_keys(dict):
     claves = list(dict.keys())
     claves.sort()
     for line in claves:
-        print(upper(line), '  =  ', dict[line])
+        print(line.upper(), '  =  ', dict[line])
 
 
 class params(object):
@@ -389,12 +383,12 @@ class params(object):
 Do you want to include it?(y/n)\n")
                 if paso2[0] == 'y':
                     value = input('value(s) of ' + key + '?= ')
-                    self.d[key] = tuple(split(replace(value, ',', ' ')))
+                    self.d[key] = tuple(value.replace(',', ' ').split())
                 else:
                     continue
             else:
                 value = input('New value(s) of ' + key + '?= ')
-                self.d[key] = tuple(split(replace(value, ',', ' ')))
+                self.d[key] = tuple(value.replace(',', ' ').split())
             view_keys(self.d)
             paso1 = input('Anything else?(y/n)\n')
 
@@ -431,29 +425,6 @@ def ascend(x):
        if not ascend(x): sort(x) 
     """
     return alltrue(greater_equal(x[1:], x[0:-1]))
-
-
-# def match_resol(xg,yg,xf,method="linear"):
-#    """
-#    Interpolates and/or extrapolate yg, defined on xg, onto the xf coordinate set.
-#    Options are 'lineal' or 'spline' (uses spline.py from Johan Hibscham)
-#    Usage:
-#    ygn=match_resol(xg,yg,xf,'spline')
-#    """
-#    if method<>"spline":
-#	if type(xf)==type(1.): xf=array([xf])
-#	ng=len(xg)
-#	d=(yg[1:]-yg[0:-1])/(xg[1:]-xg[0:-1])
-#	#Get positions of the new x coordinates
-#	ind=clip(searchsorted(xg,xf)-1,0,ng-2)
-#	ygn=take(yg,ind)+take(d,ind)*(xf-take(xg,ind))
-#	if len(ygn)==1: ygn=ygn[0]
-#	return ygn
-#    else:
-#	low_slope=(yg[1]-yg[0])/(xg[1]-xg[0])
-#	high_slope=(yg[-1]-yg[-2])/(xg[-1]-xg[-2])
-#	sp=Spline(xg,yg,low_slope,high_slope)
-#	return sp(xf)
 
 
 def match_resol(xg, yg, xf, method="linear"):
@@ -696,31 +667,6 @@ def hist(a, bins):
 #    n=array(n)
     return n[1:] - n[:-1]
 
-# def hist2D(a,xbins,ybins):
-#    """
-#    Histogram of 'a' defined on the grid xbins X ybins
-#       Usage: h=hist2D(p,xp,yp)
-#       Points larger than xbins[-1],ybins[-1] are asigned to
-#       the 'last' bin
-#    """
-#    nx=len(xbins)
-#    ny=len(ybins)
-#    #We use searchsorted differenty from the 1-D case
-#    hx=searchsorted(xbins,a)
-#    hy=searchsorted(ybins,a)
-#    h=zeros((nx,ny))
-#    for i in range(len(hx)):
-#        for j in range(len(hy)):
-#            h[hx[i],hy[i]]=+1
-#    for k in range(len(a)):
-#        for i in range(len(xbins)):
-#            for j in range(len(ybins)):
-#                if a[k]>xbins[i] and a[k]<xbins[i+1] \
-#                   and a[k]>ybins[i] and a[k]< ybins[i+1]:
-#                    h[i,j]=h[i,j]+1
-#                    break
-#                else:
-
 
 def bin_stats(x, y, xbins, stat='average'):
     """Given the variable y=f(x), and 
@@ -949,27 +895,6 @@ def out_thr(x, thr=0.2, max_it=10):
     xm = med_thr(x, thr, max_it)
     good = less_equal(x - xm, thr) * greater_equal(x - xm, -thr)
     return len(x) - sum(good)
-
-
-# def bin_aver(x,y,xbins):
-#    """Given the variable y=f(x), and
-#    the bins limits xbins, return the
-#    average <y(xbins)>"""
-#    a=argsort(x)
-#    nbins=len(xbins)
-#    y=take(y,a)
-#    x=take(x,a)
-#    n=searchsorted(x,xbins)
-#    results=xbins*0.
-#    num=hist(x,xbins)
-#    for i in range(nbins):
-#	if i< nbins-1:
-#	    results[i]=add.reduce(y[n[i]:n[i+1]])
-#	else:
-#	    results[i]=add.reduce(y[n[i]:])
-#	if num[i]>0:
-#	    results[i]=results[i]/num[i]
-#    return results
 
 
 def multicompress(condition, variables):
