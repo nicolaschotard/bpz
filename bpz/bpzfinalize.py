@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 # python bpzchisq2run.py ACS-Subaru
 # PRODUCES ACS-Subaru_bpz.cat
 
@@ -13,8 +16,10 @@
 # ALSO USING NEW i-band CATALOG istel.cat -- w/ CORRECT IDs
 
 # python bpzfinalize.py bvizjh_cut_sexseg2_allobjs_newres_offset3_djh_Burst_1M
-from coetools import *
-sum = add.reduce # Just to make sure
+from builtins import range
+from past.utils import old_div
+from .coetools import *
+sum = add.reduce  # Just to make sure
 
 ##################
 # add nf, jhgood, stellarity, x, y
@@ -39,11 +44,13 @@ for line in infile:
 outbpz = inroot + '_bpz.cat'
 
 if npeaks == 1:
-    labels = string.split('id   zb   zbmin  zbmax  tb    odds    zml   tml  chisq')
+    labels = string.split(
+        'id   zb   zbmin  zbmax  tb    odds    zml   tml  chisq')
 elif npeaks == 3:
-    labels = string.split('id   zb   zbmin  zbmax  tb    odds    zb2   zb2min  zb2max  tb2    odds2    zb3   zb3min  zb3max  tb3    odds3    zml   tml  chisq')
+    labels = string.split(
+        'id   zb   zbmin  zbmax  tb    odds    zb2   zb2min  zb2max  tb2    odds2    zb3   zb3min  zb3max  tb3    odds3    zml   tml  chisq')
 else:
-    print 'N_PEAKS = %d!?' % npeaks
+    print('N_PEAKS = %d!?' % npeaks)
     sys.exit(1)
 
 labelnicks = {'Z_S': 'zspec', 'M_0': 'M0'}
@@ -74,23 +81,23 @@ mycat = loadvarswithclass(incat)
 #################################
 # CHISQ2, nfdet, nfobs
 
-if os.path.exists(inroot+'.flux_comparison'):
-    data = loaddata(inroot+'.flux_comparison+')
+if os.path.exists(inroot + '.flux_comparison'):
+    data = loaddata(inroot + '.flux_comparison+')
 
     #nf = 6
-    nf = (len(data) - 5) / 3
+    nf = old_div((len(data) - 5), 3)
     # id  M0  zb  tb*3
     id = data[0]
-    ft=data[5:5+nf]  # FLUX (from spectrum for that TYPE)
-    fo=data[5+nf:5+2*nf]  # FLUX (OBSERVED)
-    efo=data[5+2*nf:5+3*nf]  # FLUX_ERROR (OBSERVED)
+    ft = data[5:5 + nf]  # FLUX (from spectrum for that TYPE)
+    fo = data[5 + nf:5 + 2 * nf]  # FLUX (OBSERVED)
+    efo = data[5 + 2 * nf:5 + 3 * nf]  # FLUX_ERROR (OBSERVED)
 
     # chisq 2
-    eft = ft / 15.
+    eft = old_div(ft, 15.)
     eft = max(eft)  # for each galaxy, take max eft among filters
     ef = sqrt(efo**2 + eft**2)  # (6, 18981) + (18981) done correctly
 
-    dfosq = ((ft - fo) / ef) ** 2
+    dfosq = (old_div((ft - fo), ef)) ** 2
     dfosqsum = sum(dfosq)
 
     detected = greater(fo, 0)
@@ -102,9 +109,9 @@ if os.path.exists(inroot+'.flux_comparison'):
     # DEGREES OF FREEDOM
     dof = clip2(nfobs - 3., 1, None)  # 3 params (z, t, a)
 
-    chisq2clip = dfosqsum / dof
+    chisq2clip = old_div(dfosqsum, dof)
 
-    sedfrac = divsafe(max(fo-efo), max(ft), -1)  # SEDzero
+    sedfrac = divsafe(max(fo - efo), max(ft), -1)  # SEDzero
 
     chisq2 = chisq2clip[:]
     chisq2 = where(less(sedfrac, 1e-10), 900., chisq2)
@@ -112,8 +119,7 @@ if os.path.exists(inroot+'.flux_comparison'):
     chisq2 = where(equal(nfobs, 0), 999., chisq2)
     #################################
 
-
-    #print 'BPZ tb N_PEAKS BUG FIX'
+    # print 'BPZ tb N_PEAKS BUG FIX'
     #mybpz.tb = mybpz.tb + 0.667
     #mybpz.tb2 = where(greater(mybpz.tb2, 0), mybpz.tb2 + 0.667, -1.)
     #mybpz.tb3 = where(greater(mybpz.tb3, 0), mybpz.tb3 + 0.667, -1.)
@@ -136,10 +142,10 @@ if 'sig' in mycat.labels:
 if 'zspec' not in mybpz.labels:
     if 'zspec' in mycat.labels:
         mybpz.add('zspec', mycat.zspec)
-        print mycat.zspec
+        print(mycat.zspec)
         if 'zqual' in mycat.labels:
             mybpz.add('zqual', mycat.zqual)
-print mybpz.labels
+print(mybpz.labels)
 mybpz.save(outbpz, maxy=None)
 
 ##################
@@ -163,7 +169,7 @@ mybpz.save(outbpz, maxy=None)
 # efo = inf (1e108)
 
 
-## # original chisq usually matches this:
+# original chisq usually matches this:
 ## dfosq = ((ft - fo) / efo) ** 2
 ## dfosqsum = sum(dfosq)
 
@@ -171,4 +177,3 @@ mybpz.save(outbpz, maxy=None)
 ## nfobs = sum(observed)
 
 ## chisq = dfosqsum / (nfobs - 1.)
-
