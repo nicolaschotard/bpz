@@ -108,7 +108,7 @@ def singlevalue(x):
     """IS x A SINGLE VALUE?  (AS OPPOSED TO AN ARRAY OR LIST)"""
     # return type(x) in [float, int]  THERE ARE MORE TYPECODES IN Numpy
     # THERE ARE MORE TYPECODES IN Numpy
-    return type(x) in [float, float32, float64, int, int0, int8, int16, int32, int64]
+    return not isinstance(x, (list, np.ndarray))
 
 def comma(x, ndec=0):
     if ndec:

@@ -746,9 +746,9 @@ def bpz_run(argv=None):
     # and also the parameters used to run bpz...
     if get_z:
         output.write("""##
-    ##Parameters used to run BPZ:
-    ##
-    """)
+##Parameters used to run BPZ:
+##
+""")
     claves = list(pars.d.keys())
     claves.sort()
     for key in claves:
@@ -767,7 +767,7 @@ def bpz_run(argv=None):
     
     if save_probs:
         probs = open(pars.d['PROBS_LITE'], 'w')
-        probs.write('# ID  p_bayes(z)  np.where z=np.arange(%.4f,%.4f,%.4f) \n' %
+        probs.write('# ID  p_bayes(z)  where z=arange(%.4f,%.4f,%.4f) \n' %
                     (zmin, zmax + dz, dz))
     
     if save_probs2:
@@ -829,33 +829,33 @@ def bpz_run(argv=None):
     
     # Add header with variable names to the output file
     sxhdr = """##
-    ##Column information
-    ##
-    # 1 ID"""
+##Column information
+##
+# 1 ID"""
     k = 1
     
     if pars.d['N_PEAKS'] > 1:
         for j in range(pars.d['N_PEAKS']):
             sxhdr += """
-    # %i Z_B_%i
-    # %i Z_B_MIN_%i
-    # %i Z_B_MAX_%i
-    # %i T_B_%i
-    # %i ODDS_%i""" % (k + 1, j + 1, k + 2, j + 1, k + 3, j + 1, k + 4, j + 1, k + 5, j + 1)
+# %i Z_B_%i
+# %i Z_B_MIN_%i
+# %i Z_B_MAX_%i
+# %i T_B_%i
+# %i ODDS_%i""" % (k + 1, j + 1, k + 2, j + 1, k + 3, j + 1, k + 4, j + 1, k + 5, j + 1)
             k += 5
     else:
         sxhdr += """
-    # %i Z_B
-    # %i Z_B_MIN
-    # %i Z_B_MAX
-    # %i T_B
-    # %i ODDS""" % (k + 1, k + 2, k + 3, k + 4, k + 5)
+# %i Z_B
+# %i Z_B_MIN
+# %i Z_B_MAX
+# %i T_B
+# %i ODDS""" % (k + 1, k + 2, k + 3, k + 4, k + 5)
         k += 5
     
     sxhdr += """    
-    # %i Z_ML
-    # %i T_ML
-    # %i CHI-SQUARED\n""" % (k + 1, k + 2, k + 3)
+# %i Z_ML
+# %i T_ML
+# %i CHI-SQUARED\n""" % (k + 1, k + 2, k + 3)
     
     nh = k + 4
     if 'Z_S' in col_pars.d:
@@ -1503,7 +1503,6 @@ def bpz_finalize(argv=None):
     # ALSO USING NEW i-band CATALOG istel.cat -- w/ CORRECT IDs
     
     # python bpzfinalize.py bvizjh_cut_sexseg2_allobjs_newres_offset3_djh_Burst_1M
-    sum = np.add.reduce  # Just to make sure
     
     ##################
     # add nf, jhgood, stellarity, x, y
@@ -1573,25 +1572,23 @@ def bpz_finalize(argv=None):
         ef = np.sqrt(efo**2 + eft**2)  # (6, 18981) + (18981) done correctly
     
         dfosq = (old_div((ft - fo), ef)) ** 2
-        dfosqsum = np.sum(dfosq)
-    
+        dfosqsum = np.add.reduce(dfosq)
         detected = np.greater(fo, 0)
-        nfdet = np.sum(detected)
+        nfdet = np.add.reduce(detected)
     
         observed = np.less(efo, 1)
-        nfobs = np.sum(observed)
+        nfobs = np.add.reduce(observed)
     
         # DEGREES OF FREEDOM
         dof = MLab_coe.clip2(nfobs - 3., 1, None)  # 3 params (z, t, a)
     
         chisq2clip = old_div(dfosqsum, dof)
-    
         sedfrac = MLab_coe.divsafe(np.max(fo - efo), np.max(ft), -1)  # SEDzero
     
         chisq2 = chisq2clip[:]
-        chisq2 = np.where(less(sedfrac, 1e-10), 900., chisq2)
-        chisq2 = np.where(equal(nfobs, 1), 990., chisq2)
-        chisq2 = np.where(equal(nfobs, 0), 999., chisq2)
+        chisq2 = np.where(np.less(sedfrac, 1e-10), 900., chisq2)
+        chisq2 = np.where(np.equal(nfobs, 1), 990., chisq2)
+        chisq2 = np.where(np.equal(nfobs, 0), 999., chisq2)
         #################################
     
         mybpz.add('chisq2', chisq2)

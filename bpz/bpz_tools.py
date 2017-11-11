@@ -46,9 +46,9 @@ ab_clip = 1e-6
 
 # Initialize path info
 bpz_dir = os.getenv('BPZPATH')
-fil_dir = bpz_dir + '/FILTER/'
-sed_dir = bpz_dir + '/SED/'
-ab_dir = bpz_dir + '/AB/'
+fil_dir = bpz_dir + 'FILTER/'
+sed_dir = bpz_dir + 'SED/'
+ab_dir = bpz_dir + 'AB/'
 
 # Auxiliary synthetic photometry functions
 

@@ -1,8 +1,8 @@
-## File UDFtest.bpz  Fri Nov 10 17:34:27 2017
+## File UDFtest.bpz  Sat Nov 11 08:47:56 2017
 ##
-    ##Parameters used to run BPZ:
-    ##
-    ##AB_DIR=/home/chotard/local/bpz-1.99.3//AB/
+##Parameters used to run BPZ:
+##
+##AB_DIR=/home/chotard/local/bpz-1.99.3/AB/
 ##ADD_CONTINUOUS_PROB=None
 ##ADD_SPEC_PROB=None
 ##CHECK=UDFtest.flux_comparison
@@ -13,7 +13,7 @@
 ##DZ=0.01
 ##EXCLUDE=none
 ##FC=None
-##FILTER_DIR=/home/chotard/local/bpz-1.99.3//FILTER/
+##FILTER_DIR=/home/chotard/local/bpz-1.99.3/FILTER/
 ##GET_Z=yes
 ##INPUT=UDFtest.cat
 ##INTERACTIVE=yes
@@ -37,7 +37,7 @@
 ##PROBS2=no
 ##PROBS_LITE=UDFtest.probs
 ##P_MIN=0.01
-##SED_DIR=/home/chotard/local/bpz-1.99.3//SED/
+##SED_DIR=/home/chotard/local/bpz-1.99.3/SED/
 ##SPECTRA=CWWSB4.list
 ##VERBOSE=yes
 ##ZC=None
@@ -46,17 +46,17 @@
 ##ZP_OFFSETS=0.0
 ##Z_THR=0
 ##
-    ##Column information
-    ##
-    # 1 ID
-    # 2 Z_B
-    # 3 Z_B_MIN
-    # 4 Z_B_MAX
-    # 5 T_B
-    # 6 ODDS    
-    # 7 Z_ML
-    # 8 T_ML
-    # 9 CHI-SQUARED
+##Column information
+##
+# 1 ID
+# 2 Z_B
+# 3 Z_B_MIN
+# 4 Z_B_MAX
+# 5 T_B
+# 6 ODDS    
+# 7 Z_ML
+# 8 T_ML
+# 9 CHI-SQUARED
 # 10 Z_S
 # 11 M_0
 ##

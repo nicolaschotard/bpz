@@ -1,16 +1,17 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-# Automatically adapted for numpy Jun 08, 2006
+# Automatically adapted for numpy Jun 0, 2006
 # By hand: 'float' -> float, Float -> float, Int -> int
 
 # coeio.py
-# INPUT / OUTPUT OF FILES
+# INPUT / OUTUT OF FILES
 
 from builtins import range
 from builtins import object
 from past.utils import old_div
 from .coetools import *
+from . import MLab_coe	
 import string
 
 #import fitsio
@@ -37,12 +38,12 @@ def strspl(s):
             s = s.split()
     return s
 
-
+    
 def pint(A, n=0):
     """Makes it easier to view float arrays:
     prints A.astype(int)"""
     if type(A) in [list, tuple]:
-        A = array(A)
+        A = np.array(A)
     if n != 0:
         A = A * 10**n
     print(A.astype(int))
@@ -357,7 +358,7 @@ def loadcols(infile, format='', pl=0):
     if arrayout:
         for icol in range(ncols):
             if format[icol] in 'df':
-                data[icol] = array(data[icol])
+                data[icol] = np.array(data[icol])
 
     return data
 
@@ -409,7 +410,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
 
     tr = filename[-1] == '+'
     if tr:
-        data = transpose(data)
+        data = np.transpose(data)
         filename = filename[:-1]
 
     if machine:
@@ -423,7 +424,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
         if skycat:
             separator = '\t'
         if len(data.shape) == 1:
-            data = reshape(data, (len(data), 1))
+            data = np.reshape(data, (len(data), 1))
             #data = data[:,NewAxis]
         [ny, nx] = data.shape
         # WHETHER THE COLUMN HAS ANY NEGATIVE NUMBERS: 1=YES, 0=NO
@@ -455,15 +456,17 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
 
             if machine:
                 maxy = 0
-            if (ny <= maxy) or not maxy:
+            if maxy is None or ny <= maxy:
                 yyy = list(range(ny))
             else:
-                yyy = arange(maxy) * (old_div((ny - 1.), (maxy - 1.)))
+                yyy = np.arange(maxy) * (old_div((ny - 1.), (maxy - 1.)))
                 yyy = yyy.astype(int)
             for iy in yyy:
                 for ix in range(nx):
                     datum = data[iy, ix]
-                    if isNaN(datum):
+                    print(datum)
+                    if not isinstance(datum, (list, np.ndarray)) or \
+                       MLab_coe.isNaN(datum):
                         ni, nd = 1, 1
                     else:
                         # IF TOO BIG OR TOO SMALL, NEED exp FORMAT
@@ -759,7 +762,7 @@ def loaddata(filename, dir="", silent=0, headlines=0):
     global header
 
     tr = 0
-    if filename[-1] == '+':  # TRANSPOSE OUTPUT
+    if filename[-1] == '+':  # NP.TRANSPOSE OUTPUT
         tr = 1
         filename = filename[:-1]
 
@@ -915,7 +918,7 @@ def loadmachine(filename, dir="", silent=0):
 
     # FINALIZE DATA
     for ix in range(nx):
-        exec('cat.%s = array(cat.%s)' % (cat.labels[ix], cat.labels[ix]))
+        exec('cat.%s = np.array(cat.%s)' % (cat.labels[ix], cat.labels[ix]))
 
     return cat
 
@@ -951,8 +954,8 @@ class Cat2D_xyflip(object):
         exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
 
     def get(self, x, y, dointerp=0):
-        ix = interp(x, self.x, arange(len(self.x)))
-        iy = interp(y, self.y, arange(len(self.y)))
+        ix = interp(x, self.x, np.arange(len(self.x)))
+        iy = interp(y, self.y, np.arange(len(self.y)))
         if not dointerp:  # JUST GET NEAREST
             #ix = searchsorted(self.x, x)
             #iy = searchsorted(self.y, y)
@@ -981,8 +984,8 @@ class Cat2D(object):
         exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
 
     def get(self, x, y, dointerp=0):
-        ix = interp(x, self.x, arange(len(self.x)))
-        iy = interp(y, self.y, arange(len(self.y)))
+        ix = interp(x, self.x, np.arange(len(self.x)))
+        iy = interp(y, self.y, np.arange(len(self.y)))
         if not dointerp:  # JUST GET NEAREST
             #ix = searchsorted(self.x, x)
             #iy = searchsorted(self.y, y)
@@ -1000,17 +1003,17 @@ def loadcat2d(filename, dir="", silent=0, labels='x y z'):
     if type(labels) == str:
         labels = labels.split()
     outclass = Cat2D(filename, dir, silent, labels)
-    # outclass.z = transpose(outclass.z)  # NOW FLIPPING since 12/5/09
+    # outclass.z = np.transpose(outclass.z)  # NOW FLIPPING since 12/5/09
     return outclass
 
 
 def savecat2d(data, x, y, filename, dir="", silent=0):
     """OUTPUT: FILE WITH data IN BODY AND x & y ALONG LEFT AND TOP"""
-    x = x.reshape(1, len(x))
-    data = concatenate([x, data])
-    y = concatenate([[0], y])
-    y = y.reshape(len(y), 1)
-    data = concatenate([y, data], 1)
+    x = x.np.reshape(1, len(x))
+    data = np.concatenate([x, data])
+    y = np.concatenate([[0], y])
+    y = y.np.reshape(len(y), 1)
+    data = np.concatenate([y, data], 1)
     if filename[-1] == '+':
         filename = filename[:-1]
     savedata(data, filename, dir, header='.')
@@ -1019,12 +1022,12 @@ def savecat2d(data, x, y, filename, dir="", silent=0):
 def savecat2d_xyflip(data, x, y, filename, dir="", silent=0):
     """OUTPUT: FILE WITH data IN BODY AND x & y ALONG LEFT AND TOP"""
     #y = y[NewAxis, :]
-    y = reshape(y, (1, len(y)))
-    data = concatenate([y, data])
-    x = concatenate([[0], x])
+    y = np.reshape(y, (1, len(y)))
+    data = np.concatenate([y, data])
+    x = np.concatenate([[0], x])
     #x = x[:, NewAxis]
-    x = reshape(x, (len(x), 1))
-    data = concatenate([x, data], 1)
+    x = np.reshape(x, (len(x), 1))
+    data = np.concatenate([x, data], 1)
     if filename[-1] != '+':
         filename += '+'
     #savedata(data, filename)
@@ -1069,7 +1072,7 @@ class VarsClass(object):
                 for label in self.labels:
                     print(label)
                     print(tbdata.field(label)[:5])
-                    exec("self.%s = array(tbdata.field('%s'), 'f')" %
+                    exec("self.%s = np.array(tbdata.field('%s'), 'f')" %
                          (label, label))
                     print(self.get(label)[:5])
                 self.updatedata()
@@ -1132,14 +1135,14 @@ class VarsClass(object):
             # print
         selflabelstr = selflabelstr[:-2]
         # print 'x', selflabelstr, 'x'
-        #data1 = array([self.id, self.area])
-        # print array([self.id, self.area])
-        #s = 'data3 = array([%s])' % selflabelstr
+        #data1 = np.array([self.id, self.area])
+        # print np.array([self.id, self.area])
+        #s = 'data3 = np.array([%s])' % selflabelstr
         # print s
         # exec(s)
         # print data1
-        # print 'data3 = array([%s])' % selflabelstr
-        exec('data3 = array([%s])' % selflabelstr)
+        # print 'data3 = np.array([%s])' % selflabelstr
+        data3 = np.array([selflabelstr])
         return data3
 
     def updatedata(self):
@@ -1174,7 +1177,7 @@ class VarsClass(object):
             selfcopy.assigndata()
             # PRESERVE UN-UPDATED DATA ARRAY
             selfcopy.data = np.compress(good, self.data)
-            selfcopy.taken = np.compress(good, arange(self.len()))
+            selfcopy.taken = np.compress(good, np.arange(self.len()))
             selfcopy.good = good
             return selfcopy
 
@@ -1197,7 +1200,7 @@ class VarsClass(object):
         sub.data = take(self.updateddata(), indices, 1)
         sh = sub.data.shape
         if len(sh) == 3:
-            sub.data = reshape(sub.data, sh[:2])
+            sub.data = np.reshape(sub.data, sh[:2])
         sub.assigndata()
         return sub
 
@@ -1214,7 +1217,7 @@ class VarsClass(object):
             print("PROBLEM! ID %d NOT FOUND IN takeid" % id)
             return None
         else:
-            return self.take(array([i]))
+            return self.take(np.array([i]))
 
     def putid(self, label, id, value, idlabel='id'):
         # print "putid UNTESTED!!"  -- STILL TRUE
@@ -1234,14 +1237,14 @@ class VarsClass(object):
     def takeids(self, ids, idlabel='id'):
         # selfid = self.id.astype(int) # [6 4 5]
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
-        indexlist = zeros(max(selfid) + 1, int) - 1
-        put(indexlist, selfid, arange(len(selfid)))  # [- - - - 1 2 0]
-        # self.good = greater(selfid, -1)  # TOTALLY WRONG!  USED IN bpzphist
+        indexlist = np.zeros(max(selfid) + 1, int) - 1
+        put(indexlist, selfid, np.arange(len(selfid)))  # [- - - - 1 2 0]
+        # self.good = np.greater(selfid, -1)  # TOTALLY WRONG!  USED IN bpzphist
         # ids = [4 6]  ->  indices = [1 0]
-        indices = take(indexlist, array(ids).astype(int))
+        indices = take(indexlist, np.array(ids).astype(int))
         # print type(indices[0])
-        goodindices = np.compress(greater(indices, -1), indices)
-        good = zeros(self.len(), int)
+        goodindices = np.compress(np.greater(indices, -1), indices)
+        good = np.zeros(self.len(), int)
         # print 'takeids'
         good = good.astype(int)
         goodindices = goodindices.astype(int)
@@ -1252,7 +1255,7 @@ class VarsClass(object):
         self.good = good
         if -1 in indices:
             print("PROBLEM! NOT ALL IDS FOUND IN takeids!")
-            print(np.compress(less(indices, 0), ids))
+            print(np.compress(np.less(indices, 0), ids))
         return self.take(indices)
 
     def putids(self, label, ids, values, idlabel='id', rep=True):
@@ -1269,15 +1272,15 @@ class VarsClass(object):
         idchecklist = selfid.copy()
         done = False
         while not done:  # len(idstochange):
-            indexlist = zeros(maxselfid + 1, int) - 1
-            put(indexlist, idchecklist, arange(self.len()))  # [- - - - 1 2 0]
+            indexlist = np.zeros(maxselfid + 1, int) - 1
+            put(indexlist, idchecklist, np.arange(self.len()))  # [- - - - 1 2 0]
             # ids = [4 6]  ->  indices = [1 0]
-            indices = take(indexlist, array(ids).astype(int))
+            indices = take(indexlist, np.array(ids).astype(int))
             if (-1 in indices) and (rep < 2):
                 print("PROBLEM! NOT ALL IDS FOUND IN putids!")
-                print(np.compress(less(indices, 0), ids))
+                print(np.compress(np.less(indices, 0), ids))
             if singlevalue(values):
-                values = zeros(self.len(), float) + values
+                values = np.zeros(self.len(), float) + values
             put(x, indices, values)
             put(idchecklist, indices, 0)
             if rep:  # Repeat if necessary
@@ -1304,14 +1307,14 @@ class VarsClass(object):
         # selfid = self.id.astype(int) # [6 4 5]
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         n = max((max(selfid), max(ids)))
-        indexlist = zeros(n + 1, int)
-        #indexlist = zeros(max(selfid)+1)
-        put(indexlist, selfid, arange(len(selfid)) + 1)  # [- - - - 1 2 0]
+        indexlist = np.zeros(n + 1, int)
+        #indexlist = np.zeros(max(selfid)+1)
+        put(indexlist, selfid, np.arange(len(selfid)) + 1)  # [- - - - 1 2 0]
         # ids = [4 6]  ->  indices = [1 0]
-        indices = take(indexlist, array(ids).astype(int))
+        indices = take(indexlist, np.array(ids).astype(int))
         indices = np.compress(indices, indices - 1)
-        goodindices = np.compress(greater(indices, -1), indices)
-        good = zeros(self.len(), int)
+        goodindices = np.compress(np.greater(indices, -1), indices)
+        good = np.zeros(self.len(), int)
         put(good, goodindices, 1)
         self.good = good
         return self.take(indices)
@@ -1327,23 +1330,23 @@ class VarsClass(object):
 
     def get(self, label, orelse=None):
         if label in self.labels:
-            exec('out = self.%s' % label)
+            out = getattr(self, label)
         else:
             out = orelse
         return out
 
     def set(self, label, data):
         if singlevalue(data):
-            data = zeros(self.len(), float) + data
+            data = np.zeros(self.len(), float) + data
         exec('self.%s = data' % label)
 
     def add(self, label, data):
         if 1:  # self.labels:
             if singlevalue(data):
                 if self.len():
-                    data = zeros(self.len(), float) + data
+                    data = np.zeros(self.len(), float) + data
                 else:
-                    data = array([float(data)])
+                    data = np.array([float(data)])
             elif self.len() and (len(data) != self.len()):
                 print('WARNING!! in loadvarswithclass.add:')
                 print('len(%s) = %d BUT len(id) = %d' %
@@ -1373,7 +1376,7 @@ class VarsClass(object):
                     selfuniqueids = invertselection(commonids, self.id)
                     self = self.takeids(selfuniqueids)
             for label in self.labels:
-                exec('self.%s = concatenate((self.get(label), self2.get(label)))' % label)
+                exec('self.%s = np.concatenate((self.get(label), self2.get(label)))' % label)
             self.updatedata()
         return self
 
@@ -1419,7 +1422,7 @@ class VarsClass(object):
         if 'dtol' in self.labels:
             dtol = self.dtol
         else:
-            dtol = dtol * ones(self.len())
+            dtol = dtol * np.ones(self.len())
         for i in range(self.len()):
             if not (i % 100):
                 print("%d / %d" % (i, self.len()))
@@ -1434,8 +1437,8 @@ class VarsClass(object):
 # pause()
             matchids.append(matchid)
             dists.append(dist)
-        matchids = array(matchids)
-        dists = array(dists)
+        matchids = np.array(matchids)
+        dists = np.array(dists)
         matchids = where(equal(matchids, searchcat.len()), -1, matchids)
         self.assign('matchid', matchids)
         self.assign('dist', dists)
@@ -1444,7 +1447,7 @@ class VarsClass(object):
         """Finds closest matches for self within searchcat"""
         i, d = findmatches2(searchcat.x, searchcat.y, self.x, self.y)
         if dtol:
-            i = where(less(d, dtol), i, -1)
+            i = where(np.less(d, dtol), i, -1)
         self.assign('matchi', i)
         self.assign('dist', d)
 
@@ -1548,8 +1551,8 @@ class VarsClass(object):
 ##         selfid = self.id.astype(int)
 ##         ids = ids.astype(int)
 ##         n = max((max(selfid), max(ids)))
-##         takeme1 = zeros(n+1)
-##         takeme2 = zeros(n+1)
+##         takeme1 = np.zeros(n+1)
+##         takeme2 = np.zeros(n+1)
 ##         put(takeme1, selfid, 1)
 ##         put(takeme2, ids, 1)
 ##         takeme = takeme1 * takeme2
@@ -1840,7 +1843,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
                 print(ss)
                 die()
 
-    data = transpose(data)
+    data = np.transpose(data)
     paramcol = {}
     params = []
 
@@ -1881,11 +1884,11 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
             param = param[:-6]
         if param in ["FLAGS", "IMAFLAGS_ISO"]:
             if not flags:
-                flags = ravel(data[col - 1]).astype(int)
+                flags = np.ravel(data[col - 1]).astype(int)
                 param = "FLAGS"
             else:
                 # "FLAGS" OR "IMAFLAGS_ISO"
-                flags = bitwise_or(flags, ravel(data[col - 1]).astype(int))
+                flags = bitwise_or(flags, np.ravel(data[col - 1]).astype(int))
                 param = ''
                 lastcol += 1
 # if (param == "FLAGS") and paramcol.has_key("FLAGS"):
@@ -1897,7 +1900,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
         # ASSIGN COLUMN(S), NOW THAT WE KNOW HOW MANY THERE ARE
         if param != lastparam and param:
             if lastcol:
-                paramcol[lastparam] = arange(ncols) + lastcol
+                paramcol[lastparam] = np.arange(ncols) + lastcol
             lastcol = col
             lastparam = param
             params.append(param)
@@ -1906,7 +1909,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
 # IN CASE WE ENDED ON AN ARRAY (MAG_APER[4]) -- TAKEN CARE OF BELOW?
 # if param == lastparam:
 # if lastcol:
-##             paramcol[lastparam] = arange(ncols) + lastcol
+##             paramcol[lastparam] = np.arange(ncols) + lastcol
 ##         lastcol = col
 ##         lastparam = param
 # params.append(param)
@@ -1917,33 +1920,33 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     paramstr = string.join(params, ',')
     # ASSIGN LAST COLUMN(S)
     ncols = nx - lastcol + 1
-    paramcol[lastparam] = arange(ncols) + lastcol
+    paramcol[lastparam] = np.arange(ncols) + lastcol
 
     col = paramcol.get("FWHM")
-    #fwhm = col and ravel(data[col-1])
+    #fwhm = col and np.ravel(data[col-1])
     if col.any():
-        fwhm = ravel(data[col - 1])
+        fwhm = np.ravel(data[col - 1])
     col = paramcol.get("FLUX_RADIUS")
-    #rf = col and ravel(data[col-1])
+    #rf = col and np.ravel(data[col-1])
     if col.any():
-        rf = ravel(data[col - 1])
+        rf = np.ravel(data[col - 1])
     col = paramcol.get("MAG")
-    #mag = col and ravel(data[col-1])
+    #mag = col and np.ravel(data[col-1])
     if col.any():
-        mag = ravel(data[col - 1])
+        mag = np.ravel(data[col - 1])
 
-    good = ones(ny)
+    good = np.ones(ny)
     if not silent:
         print(sum(good), end=' ')
     if purge:
         if "FLAGS" in req and (flags != None):
-            good = less(flags, maxflags)
+            good = np.less(flags, maxflags)
         if "FWHM" in req and (fwhm != None):
-            good = good * greater(fwhm, minfwhm)
+            good = good * np.greater(fwhm, minfwhm)
         if "RF" in req and (rf != None):
-            good = good * greater(rf, minrf)
+            good = good * np.greater(rf, minrf)
         if "MAG" in req and (mag != None):
-            good = good * less(mag, maxmag)
+            good = good * np.less(mag, maxmag)
 
     if not silent:
         print(sum(good))
@@ -1996,10 +1999,10 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
                 # print data[col-1]
                 # print shape(data[col-1])
                 # print type(data[col-1])
-                outdata.append(ravel(data[col - 1]))
+                outdata.append(np.ravel(data[col - 1]))
             else:
                 #exec(kk + '= take(data, col-1)')
-                outdata.append(ravel(take(data, col - 1)))
+                outdata.append(np.ravel(take(data, col - 1)))
 
     paramstr = string.join(params, ',')
     #exec(paramstr + ' = outdata')
@@ -2031,7 +2034,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
         flags = outdata[params.index('flags')]
         imaflagsiso = outdata[params.index('imaflagsiso')]
         # "FLAGS" OR "IMAFLAGS_ISO"
-        flags = bitwise_or(flags.astype(int), imaflagsiso.astype(int))
+        flags = np.bitwise_or(flags.astype(int), imaflagsiso.astype(int))
         outdata[params.index('flags')] = flags.astype(float)
 
     # FOR Txitxo's photometry.py
@@ -2044,7 +2047,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     if 'mag' in params:
         photcom += 'mb = mag\n'
     if 'magerr' in params:
-        photcom += 'emb = ravel(magerr)\n'
+        photcom += 'emb = np.ravel(magerr)\n'
 
     if ma1name:
         magtype = string.lower(ma1name.split('[')[0])
@@ -2055,11 +2058,11 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
         else:
             ma1i = 0
         if magtype == 'aper':
-            photcom += 'ma1 = ravel(magaper[%d])\n' % ma1i
-            photcom += 'ema1 = ravel(magerraper[%d])\n' % ma1i
+            photcom += 'ma1 = np.ravel(magaper[%d])\n' % ma1i
+            photcom += 'ema1 = np.ravel(magerraper[%d])\n' % ma1i
         else:
-            photcom += 'ma1 = ravel(mag%s)\n' % magtype
-            photcom += 'ema1 = ravel(magerr%s)\n' % magtype
+            photcom += 'ma1 = np.ravel(mag%s)\n' % magtype
+            photcom += 'ema1 = np.ravel(magerr%s)\n' % magtype
 
     data = outdata
     # print 'params:', params
@@ -2083,7 +2086,7 @@ def loadsexcat2(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magn
     cat.labels = params
     cat.assigndata()
     for label in cat.labels:
-        exec('cat.%s = ravel(cat.%s).astype(float)' % (label, label))
+        exec('cat.%s = np.ravel(cat.%s).astype(float)' % (label, label))
     #cat.flags = cat.flags[NewAxis,:]
     #cat.flags = cat.flags.astype(float)
     return cat
@@ -2182,7 +2185,7 @@ def saveregions(x, y, filename, labels=[], precision=1, coords='image', color="g
 def savelabels(x, y, labels, filename, coords='image', color="green", symbol="circle", precision=1, fontsize=12, bold=1):
     """SAVES POSITIONS AS A ds9 REGIONS FILE"""
     if type(labels) in [int, float]:
-        labels = arange(len(x)) + 1
+        labels = np.arange(len(x)) + 1
     fout = open(filename, 'w')
     fout.write('global color=%s font="helvetica %d %s" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n' % (
         color, fontsize, ['normal', 'bold'][bold]))
@@ -2238,7 +2241,7 @@ def loadfits(filename, dir="", index=0):
         data = pyfits.open(filename)[index].data
         # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
         if not pyfitsusesnumpy:
-            data = array(data)  # .tolist() ??
+            data = np.array(data)  # .tolist() ??
         return data
     else:
         print()
