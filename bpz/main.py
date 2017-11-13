@@ -1568,9 +1568,9 @@ def bpz_finalize(argv=None):
     
         # chisq 2
         eft = old_div(ft, 15.)
-        eft = np.max(eft)  # for each galaxy, take max eft among filters
+        eft = np.max(eft, axis=0)  # for each galaxy, take max eft among filters
         ef = np.sqrt(efo**2 + eft**2)  # (6, 18981) + (18981) done correctly
-    
+
         dfosq = (old_div((ft - fo), ef)) ** 2
         dfosqsum = np.add.reduce(dfosq)
         detected = np.greater(fo, 0)
@@ -1581,14 +1581,14 @@ def bpz_finalize(argv=None):
     
         # DEGREES OF FREEDOM
         dof = MLab_coe.clip2(nfobs - 3., 1, None)  # 3 params (z, t, a)
-    
         chisq2clip = old_div(dfosqsum, dof)
-        sedfrac = MLab_coe.divsafe(np.max(fo - efo), np.max(ft), -1)  # SEDzero
-    
+        sedfrac = MLab_coe.divsafe(np.max(fo - efo, axis=0), np.max(ft, axis=0), -1)  # SEDzero
+
         chisq2 = chisq2clip[:]
         chisq2 = np.where(np.less(sedfrac, 1e-10), 900., chisq2)
         chisq2 = np.where(np.equal(nfobs, 1), 990., chisq2)
         chisq2 = np.where(np.equal(nfobs, 0), 999., chisq2)
+
         #################################
     
         mybpz.add('chisq2', chisq2)
