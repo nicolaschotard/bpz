@@ -397,13 +397,14 @@ def savecols(data, filename, format=''):
     fout.close()
 
 
-def savedata(data, filename, dir="", header="", separator="  ", format='', labels='', descriptions='', units='', notes=[], pf=0, maxy=300, machine=0, silent=0):
+def savedata(data, filename, dir="", header="", separator="  ", format='', labels='',
+             descriptions='', units='', notes=[], pf=0, maxy=300, machine=0, silent=0):
     """Saves an array as an ascii data file into an array."""
-    # AUTO FORMATTING (IF YOU WANT, ALSO OUTPUTS FORMAT SO YOU CAN USE IT NEXT TIME w/o HAVING TO CALCULATE IT)
+    # AUTO FORMATTING (IF YOU WANT, ALSO OUTPUTS FORMAT SO YOU CAN USE IT NEXT TIME w/o HAVING
+    # TO CALCULATE IT)
     # maxy: ONLY CHECK THIS MANY ROWS FOR FORMATTING
     # LABELS MAY BE PLACED ABOVE EACH COLUMN
     # IMPROVED SPACING
-
     dow = filename[-1] == '-'  # DON'T OVERWRITE
     if dow:
         filename = filename[:-1]
@@ -453,7 +454,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
             # colneg = [0] * nx  # WHETHER THE COLUMN HAS ANY NEGATIVE NUMBERS: 1=YES, 0=NO
             # WHETHER THE COLUMN HAS ANY REALLY BIG NUMBERS THAT NEED exp FORMAT : 1=YES, 0=NO
             colexp = [0] * nx
-
             if machine:
                 maxy = 0
             if maxy is None or ny <= maxy:
@@ -464,9 +464,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
             for iy in yyy:
                 for ix in range(nx):
                     datum = data[iy, ix]
-                    print(datum)
-                    if not isinstance(datum, (list, np.ndarray)) or \
-                       MLab_coe.isNaN(datum):
+                    if MLab_coe.isNaN(datum):
                         ni, nd = 1, 1
                     else:
                         # IF TOO BIG OR TOO SMALL, NEED exp FORMAT
@@ -476,9 +474,9 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                         else:
                             ni = len("% d" % datum) - 1
                             if ni <= 3:
-                                nd = ndec(datum, max=4)
+                                nd = MLab_coe.ndec(datum, max=4)
                             else:
-                                nd = ndec(datum, max=7 - ni)
+                                nd = MLab_coe.ndec(datum, max=7 - ni)
                             # Float32: ABOUT 7 DIGITS ARE ACCURATE (?)
 
                     if ni > colint[ix]:  # IF BIGGEST, YOU GET TO DECIDE NEG SPACE OR NO
@@ -488,12 +486,8 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     elif ni == colint[ix]:
                         colneg[ix] = (datum < 0) or colneg[ix]
                         # print '=', ix, colneg[ix], nd, coldec[ix]
-                    coldec[ix] = max([nd, coldec[ix]])
-                    colint[ix] = max([ni, colint[ix]])
-
-            # print colneg
-            # print colint
-            # print coldec
+                    coldec[ix] = np.max([nd, coldec[ix]])
+                    colint[ix] = np.max([ni, colint[ix]])
 
             collens = []
             for ix in range(nx):
@@ -619,7 +613,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 for label in labels:
                     maxcollen = max([maxcollen, len(label)])
                 for ix in range(nx):
-                    label = string.ljust(labels[ix], maxcollen)
+                    label = labels[ix].ljust(maxcollen)
                     headline += '# %2d %s' % (ix + 1, label)
                     if descriptions:
                         if descriptions[ix]:
@@ -639,7 +633,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     collen = collens[ix]
                     # label = labels[ix][:collen]  # TRUNCATE LABEL TO FIT COLUMN DATA
                     label = labels[ix]
-                    label = string.center(label, collen)
+                    label = label.center(collen)
                     headline += label + separator
                 headline += '\n'
                 if not header:
@@ -1124,26 +1118,7 @@ class VarsClass(object):
         return selfcopy
 
     def updateddata(self):
-        selflabelstr = ''
-        for label in self.labels:
-            # if label <> 'flags':
-            selflabelstr += 'self.' + label + ', '
-            # print label
-            #exec('print self.%s') % label
-            #exec('print type(self.%s)') % label
-            #exec('print self.%s.shape') % label
-            # print
-        selflabelstr = selflabelstr[:-2]
-        # print 'x', selflabelstr, 'x'
-        #data1 = np.array([self.id, self.area])
-        # print np.array([self.id, self.area])
-        #s = 'data3 = np.array([%s])' % selflabelstr
-        # print s
-        # exec(s)
-        # print data1
-        # print 'data3 = np.array([%s])' % selflabelstr
-        data3 = np.array([selflabelstr])
-        return data3
+        return np.array([getattr(self, label) for label in self.labels])
 
     def updatedata(self):
         self.data = self.updateddata()
@@ -1462,14 +1437,16 @@ class VarsClass(object):
             if oldlabel in list(self.units.keys()):
                 self.units[newlabel] = self.units[oldlabel]
 
-    def save(self, name='', dir="", header='', format='', labels=1, pf=0, maxy=300, machine=0, silent=0):
+    def save(self, name='', dir="", header='', format='', labels=1, pf=0, maxy=300,
+             machine=0, silent=0):
         if type(labels) == list:
             self.labels = labels
         labels = labels and self.labels  # if labels then self.labels, else 0
         name = name or self.name  # if name then name, else self.name
         header = header or self.header  # if header then header, else self.header
-        savedata(self.updateddata(), name + '+', dir=dir, labels=labels, header=header, format=format, pf=pf, maxy=maxy,
-                 machine=machine, descriptions=self.descriptions, units=self.units, notes=self.notes, silent=silent)
+        savedata(self.updateddata(), name + '+', dir=dir, labels=labels, header=header,
+                 format=format, pf=pf, maxy=maxy, machine=machine, descriptions=self.descriptions,
+                 units=self.units, notes=self.notes, silent=silent)
 
     def savefitstable(self, name='', header='', format={}, labels=1, overwrite=1):  # FITS TABLE
         # if name then name, else self.name

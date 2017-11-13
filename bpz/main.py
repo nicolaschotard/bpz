@@ -1610,5 +1610,5 @@ def bpz_finalize(argv=None):
             print(mycat.zspec)
             if 'zqual' in mycat.labels:
                 mybpz.add('zqual', mycat.zqual)
-    print(mybpz.labels)
+
     mybpz.save(outbpz, maxy=None)
