@@ -24,13 +24,13 @@ from builtins import str
 from builtins import range
 from builtins import object
 from past.utils import old_div
-from useful import *
-from bpz_tools import *
+from bpz.useful import *
+from bpz.bpz_tools import *
 from coeplott import *  # pylab, prange, rectangle
 import shelve
-from MLab_coe import ndec
+from bpz.MLab_coe import ndec
 # , prange, plotconfig
-from coeio import loaddata, loadfile, params_cl, str2num, loaddict, findmatch1, pause
+from bpz.coeio import loaddata, loadfile, params_cl, str2num, loaddict, findmatch1, pause
 from numpy import *  # (REIMPORT!, OTHERWISE numarray TAKES OVER)
 import string  # AFTER numpy, WHICH HAS ITS OWN string
 from os.path import exists, join
@@ -38,8 +38,8 @@ from os.path import exists, join
 
 def obs_spectrum_AB(sed, z):
     lam, flam = obs_spectrum(sed, z)
-    fnu = flam * lam**2
-    m = flux2mag(fnu)  # -2.5 * log10(fnu)
+    fnu = flam * lam**2 + 1e-300
+    m = -2.5 * log10(fnu)
     return lam, m
 
 
@@ -89,16 +89,16 @@ class bpzPlots(object):
         while self.bpzstr[i][:2] == '##':
             line = self.bpzstr[i][2:]
             if '=' in line:
-                [key, value] = string.split(line, '=')
+                [key, value] = line.split('=')
                 self.bpzparams[key] = value
             i = i + 1
         self.bpzcols = []
         while self.bpzstr[i][:2] == '# ':
             line = self.bpzstr[i][2:]
-            [col, key] = string.split(line)
+            [col, key] = line.split()
             self.bpzcols.append(key)
             i = i + 1
-
+            
         self.spectra = self.bpzparams.get('SPECTRA', 'CWWSB_fuv_f_f.list')
         self.columns = self.bpzparams.get('COLUMNS', run_name + '.columns')
         self.flux_comparison = self.bpzparams.get(
@@ -117,10 +117,10 @@ class bpzPlots(object):
 
         # If the input is a pair of X,Y coordinates
         if ',' in str(id_str) and xy_cols != None:
-            x, y = list(map(float, tuple(split(id_str), ',')))
+            x, y = list(map(float, tuple(id_str.split(), ',')))
             x_cat, y_cat = get_data(self.cat, xy_cols)
             self.id = argmin(dist(x_cat, y_cat, x, y)) + 1
-        elif id_str == None:
+        elif id_str is None:
             self.id = None
         else:
             if id_str[-2:] == '.i':
@@ -150,7 +150,7 @@ class bpzPlots(object):
         id = all[:, 0]  # ID column
 
         # Get the row which contains the ID number we are interested in
-        if self.id == None:
+        if self.id is None:
             self.id = id  # DEFAULT: DO 'EM ALL
         if type(self.id) == str:
             i_ids = [str2num(self.id[1:]) - 1]
@@ -216,6 +216,7 @@ class bpzPlots(object):
                 bpzdata.shape = (1, len(bpzdata))
             bpzdata = transpose(bpzdata)
             #odds = bpzdata[self.bpzcols.index('ODDS')]
+            print(self.bpzcols)
             if 'ODDS' in self.bpzcols:
                 i = self.bpzcols.index('ODDS')
             else:
@@ -272,21 +273,7 @@ class bpzPlots(object):
 
             # chisq 2
             eft = old_div(ft, 15.)
-            #eft = zeros(nf) + max(eft)
-            # print eft
-            # print max(eft)
-            # print 'eft', eft
             eft = array([max(eft)] * nf)
-            # print 'eft', eft
-            # print 'efo', efo
-            #eft = ones(nf) * max(eft)
-            #eft = zeros(nf) + max(eft)
-            #ef = sqrt(efo**2 + eft**2)
-            #ef = hypot(eft, eft)
-            #ef = hypot(efo, efo)
-            # print type(efo), type(eft)
-            #efo = array(efo.tolist())
-            #eft = array(eft.tolist())
             ef = hypot(efo, eft)
             #
             dfosq = (old_div((ft - fo), ef)) ** 2
@@ -338,7 +325,6 @@ class bpzPlots(object):
 
             # print sed, z
             x, y = obs_spectrum_AB(sed, z)
-
             if nomargins:
                 ax = gca()
                 ax.set_xticklabels([])
@@ -360,37 +346,25 @@ class bpzPlots(object):
             # Normalize spectrum to model fluxes
             y_norm = match_resol(x, y, lambda_m)
             if sum(ft):
-                # dm = mean(y_norm - ft) # Normalize magnitudes
-                # print dm
-                # pause()
-                # y = y - mean(y_norm - ft) # Normalize magnitudes
-                y_norm_seen = compress(seen, y_norm)
-                ft_seen = compress(seen, ft)
-                #
+                y_norm_seen = y_norm[seen] #[]compress(seen, y_norm)
+                ft_seen = ft[seen] #compress(seen, ft)
+
                 # Check for model flux non-detections (may throw everything off!)
                 dm1 = min(y_norm_seen)
                 y_norm_seen = y_norm_seen - dm1
                 seen2 = less(y_norm_seen, 90)
                 y_norm_seen = compress(seen2, y_norm_seen)
                 ft_seen = compress(seen2, ft_seen)
-                #
-                # print y_norm_seen
-                # print ft_seen
+
                 dm2 = mean(y_norm_seen - ft_seen)  # Normalize magnitudes
-                # print y_norm_seen - ft_seen
-                # print dm2
                 y = y - dm1 - dm2
                 y_norm_seen = y_norm_seen - dm2
-                # print y_norm_seen
-                #
+
                 # Re-Normalize to brightest:
                 i = argmin(ft_seen)
-                # print ft_seen[i]
                 dm3 = y_norm_seen[i] - ft_seen[i]
                 y = y - dm3
                 y_norm_seen = y_norm_seen - dm3
-                # print y_norm_seen
-                # print ft_seen
             else:
                 print('OBSERVED FIT MINIZED & COMPRIMISED!!')
 
@@ -403,23 +377,13 @@ class bpzPlots(object):
             yinxrange = compress(inxrange, y)
 
             yyy2 = concatenate([fo, ft])
-            #yyy  = concatenate([fo, ft, yinxrange, fo+efo, fo-efo])
-            #yyy  = concatenate([fo, ft, fo+efo, fo-efo, fo-eft, fo+eft])
-            #yyy  = concatenate([fo, ft, fo-eft, fo+eft])
 
-            #fog = compress(observed, fo)
-            #efog = compress(observed, efo)
             fog = compress(observed * seen, fo)
             efog = compress(observed * seen, efo)
             ftg = compress(observed * seen, ft)
             eftg = compress(observed * seen, eft)
             yyy = concatenate([ftg - eftg, ftg + eftg, fog + efog, fog - efog])
-            #yyy  = concatenate([fog, ft, fog+efog, fog-efog])
-            #yyy  = concatenate([fog, ft, fog+efog+0.2, fog-efog-0.2])
-            # print yyy, 'yyy'
-            # print minmax(yyy)
             yrange = prange(yyy)
-            # print yrange
 
             # cap max, so you don't show big peaks and so you don't squash all efo
             yyymax = min([max(yyy), 1.5 * max(yyy2), 1.5 * max(fo)])
@@ -460,16 +424,14 @@ class bpzPlots(object):
             def customfiltcolor(filt, lam):
                 color = 'red'
                 for key in list(colors.keys()):
-                    if string.find(filt, key) > -1:
+                    if filt.find(key) > -1:
                         color = colors[key]
                         color = str(color)  # for 0.50
-                        if string.find(color, ',') > -1:
+                        if color.find(',') > -1:
                             color = tuple(stringsplitatof(color, ','))
                         break
                 return color
 
-            # print '  filt     lambda     fo        efo         ft        chi'
-            # print 'filt     lambda   fo      efo     ft      chi'
             if verbose:
                 print(' filt      lambda    m      dm      mt      chi')
 

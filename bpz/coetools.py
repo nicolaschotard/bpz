@@ -205,8 +205,8 @@ def FltArr(n0, n1):
 
 def IndArr(n0, n1):
     """MAKES A 2-D INTEGER ARRAY WITH INCREASING INDEX"""
-    a = arange(n0 * n1)
-    return resize(a, [n0, n1])
+    a = np.arange(n0 * n1)
+    return np.resize(a, [n0, n1])
 
 #################################
 # STRINGS, INPUT
@@ -265,9 +265,9 @@ def stringsplitatoi(strg, separator=''):
 
 def stringsplitatof(str, separator=''):
     if separator:
-        words = strg.split(separator)
+        words = str.split(separator)
     else:
-        words = strg.split()
+        words = str.split()
     vals = []
     for word in words:
         vals.append(float(word))
@@ -301,7 +301,7 @@ def strfindall(str, phr):
     pos = []
     start = -1
     while 1:
-        start = string.find(str, phr, start + 1)
+        start = str.find(phr, start + 1)
         if start > -1:
             pos.append(start)
         else:
@@ -319,10 +319,10 @@ def strbtw1(s, left, right=None):
             right = left
         elif len(left) == 2:
             left, right = left
-    i1 = string.find(s, left)
+    i1 = s.find(left)
     if (i1 > -1):
         i1 += len(left) - 1
-        i2 = string.find(s, right, i1 + 1)
+        i2 = s.find(right, i1 + 1)
         if (i2 > i1):
             out = s[i1 + 1:i2]
     return out
@@ -339,13 +339,13 @@ def strbtw(s, left, right=None, r=False):
             right = left
         elif len(left) == 2:
             left, right = left
-    i1 = string.find(s, left)
+    i1 = s.find(left)
     if (i1 > -1):
         i1 += len(left) - 1
         if r:  # search from the right
-            i2 = string.rfind(s, right, i1 + 1)
+            i2 = s.rfind(right, i1 + 1)
         else:
-            i2 = string.find(s, right, i1 + 1)
+            i2 = s.find(right, i1 + 1)
         if (i2 > i1):
             out = s[i1 + 1:i2]
     return out
@@ -356,9 +356,9 @@ def getanswer(question=''):
     while ans == -1:
         inp = input(question)
         if inp:
-            if string.upper(inp[0]) == 'Y':
+            if inp[0].upper() == 'Y':
                 ans = 1
-            if string.upper(inp[0]) == 'N':
+            if inp[0].upper() == 'N':
                 ans = 0
     return ans
 
@@ -377,8 +377,8 @@ def putids(selfvalues, selfids, ids, values):
         n = len(selfids)
         selfvalues = np.zeros(n, int) + selfvalues
     indexlist = np.zeros(max(selfids) + 1, int) - 1
-    put(indexlist, np.array(selfids).astype(int), arange(len(selfids)))
-    indices = take(indexlist, np.array(ids).astype(int))
+    put(indexlist, np.array(selfids).astype(int), np.arange(len(selfids)))
+    indices = np.take(indexlist, np.array(ids).astype(int))
     put(selfvalues, indices, values)
     return selfvalues
 
@@ -400,7 +400,7 @@ def common(id1, id2):
     put(in1, id1, 1)
     put(in2, id2, 1)
     inboth = in1 * in2
-    ids = arange(n + 1)
+    ids = np.arange(n + 1)
     ids = np.compress(inboth, ids)
     return ids
 
@@ -410,9 +410,9 @@ def common(id1, id2):
 def census(a, returndict=1):
     a = sort(ravel(a))
     if returndict:
-        i = arange(min(a), max(a) + 2)
+        i = np.arange(min(a), max(a) + 2)
     else:
-        i = arange(max(a) + 2)
+        i = np.arange(max(a) + 2)
     s = searchsorted(a, i)
     s = s[1:] - s[:-1]
     i = i[:-1]
@@ -437,7 +437,7 @@ def census(a, returndict=1):
 
 def invertselection(ids, all):
     if type(all) == int:  # size input
-        all = arange(all) + 1
+        all = np.arange(all) + 1
         put(all, np.array(ids) - 1, 0)
         all = np.compress(all, all)
         return all
@@ -456,12 +456,12 @@ def mergeids(id1, id2):
     id2 = np.array(id2).astype(int)
     idc = common(id1, id2)
     id3 = invertselection(idc, id2)
-    return concatenate((id1, id3))
+    return np.concatenate((id1, id3))
 
 
 def findmatch1(x, xsearch, tol=1e-4):
     """RETURNS THE INDEX OF x WHERE xsearch IS FOUND"""
-    i = argmin(abs(x - xsearch))
+    i = np.argmin(abs(x - xsearch))
     if tol:
         if abs(x[i] - xsearch) > tol:
             print(xsearch, 'NOT FOUND IN findmatch1')
@@ -477,11 +477,11 @@ def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0)
     if silent < 0:
         print('n=', n)
     if not xsorted:
-        SI = argsort(x)
-        x = take(x, SI)
-        y = take(y, SI)
+        SI = np.argsort(x)
+        x = np.take(x, SI)
+        y = np.take(y, SI)
     else:
-        SI = arange(n)
+        SI = np.arange(n)
 
     dist = 99  # IN CASE NO MATCH IS FOUND
 
@@ -503,7 +503,7 @@ def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0)
         if x[i] - xsearch > dtol:
             done = 'too far'
         else:
-            dist = sqrt((x[i] - xsearch) ** 2 + (y[i] - ysearch) ** 2)
+            dist = np.sqrt((x[i] - xsearch) ** 2 + (y[i] - ysearch) ** 2)
             if dist < dtol:
                 done = 'found'
             elif i == n - 1:
@@ -534,14 +534,14 @@ def findmatches2(x1, y1, x2, y2):
     RETURNS INDICES AND DISTANCES"""
     dx = subtract.outer(x1, x2)
     dy = subtract.outer(y1, y2)
-    d = sqrt(dx**2 + dy**2)
-    i = argmin(d, 0)
+    d = np.sqrt(dx**2 + dy**2)
+    i = np.argmin(d, 0)
 
     n1 = len(x1)
     n2 = len(x2)
-    j = arange(n2)
+    j = np.arange(n2)
     di = n2 * i + j
-    dmin = take(d, di)
+    dmin = np.take(d, di)
     return i, dmin
 
 
@@ -645,9 +645,9 @@ def addmags(m1, m2, dm1=0, dm2=0):
         m = -2.5 * log10(F)
         #dF1 = 0.921034 * F1 * dm1
         #dF2 = 0.921034 * F2 * dm2
-        #dF = sqrt(dF1 ** 2 + dF2 ** 2)
+        #dF = np.sqrt(dF1 ** 2 + dF2 ** 2)
         #dm = dF / F / 0.921034
-        dm = old_div(sqrt((F1 * dm1) ** 2 + (F2 * dm2) ** 2), F)
+        dm = old_div(np.sqrt((F1 * dm1) ** 2 + (F2 * dm2) ** 2), F)
     output = (m, dm)
 
     return output

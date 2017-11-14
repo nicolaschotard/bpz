@@ -14,7 +14,9 @@ from pylab import close as closecurrentfig
 #from MLab_coe import singlevalue
 import os
 from mycolormaps import *
-from coeio import *
+from bpz.coeio import *
+from colormapdata import colormap_map
+from bpz.MLab_coe import *
 
 # p.14 postscript, native gtk and native wx do not support alpha or antialiasing.
 # You can create an arbitrary number of axes images inside a single axes, and these will be composed via alpha blending. However, if you want to blend several images, you must make sure that the hold state is True and that the alpha of the layered images is less than 1.0; if alpha=1.0 then the image on top will totally obscure the images below. Because the image blending is done using antigrain (regardless of your backend choice), you can blend images even on backends which don't support alpha (eg, postscript). This is because the alpha blending is done in the frontend and the blended image is transferred directly to the backend as an RGB pixel array. See Recipe 9.4.2 for an example of how to layer images.
@@ -358,7 +360,7 @@ def axlines(x=0, y=0, c='k', ls='-', **other):
 
 def singlevalue(x):
     """IS x A SINGLE VALUE?  (AS OPPOSED TO AN ARRAY OR LIST)"""
-    return type(x) in [NoneType, float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
+    return type(x) in [None, float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
 
 
 def ticks(tx, ax='xy', fmt='%g'):
@@ -609,9 +611,6 @@ if 0:
 # PLUS, THE PLOT WILL BE AUTOMATICALLY UPDATED WITH EACH COMMAND YOU GIVE
 
 clear = cla  # cla() CLEAR PLOT
-
-from colormapdata import colormap_map
-from MLab_coe import *
 
 
 def closefig(num=None):

@@ -43,15 +43,12 @@ from __future__ import print_function
 # outdir
 # segm.fits
 # color image
-
-from builtins import zip
-from builtins import range
+import os
 from past.utils import old_div
-from coetools import *
-# import Image #, ImageDraw, ImageFont
+from bpz.coetools import *
+from bpz import coeio
 import sedplotAB
 import probplot
-# from coeplot2a import *  # prange
 
 #dir = join(home, 'ACS/color/production/CL0024')
 #file = join(dir, 'CL0024.png')
@@ -69,14 +66,14 @@ def colorstamps(cat, outdir, colorfile, addon='', offset=(0, 0)):
     nx, ny = im.size
     dx = dy = old_div(n, 2)
     dxo, dyo = offset
-    outdir = join(outdir, addon)
-    if not exists(outdir):
+    outdir = os.path.join(outdir, addon)
+    if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     for i in range(cat.len()):
         id = roundint(cat.id[i])
         outfile = 'stamp%d.png' % id
-        outfile = join(outdir, outfile)
+        outfile = os.path.join(outdir, outfile)
         if os.path.exists(outfile):
             continue
         else:
@@ -93,7 +90,7 @@ def segmstamps(cat, outdir, segmfile, offset=(0, 0)):
     segm = loadfits(segmfile)
     dx = dy = old_div(n, 2)
     dxo, dyo = offset
-    if not exists(outdir):
+    if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     segmids = cat.get('segmid', cat.id).round().astype(int)
@@ -101,7 +98,7 @@ def segmstamps(cat, outdir, segmfile, offset=(0, 0)):
     for i in range(cat.len()):
         id = segmids[i]
         outfile = 'segm%d.gif' % id
-        outfile = join(outdir, outfile)
+        outfile = os.path.join(outdir, outfile)
         # delfile(outfile)
         if os.path.exists(outfile):
             continue
@@ -121,7 +118,7 @@ def segmstamps(cat, outdir, segmfile, offset=(0, 0)):
 
 
 def sedplots(cat, root, outdir, redo=False):
-    if not exists(outdir):
+    if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     ids = cat.get('segmid', cat.id).round().astype(int)
@@ -133,10 +130,10 @@ def sedplots(cat, root, outdir, redo=False):
 
 
 def probplots(cat, root, outdir, zmax=7, redo=False):
-    if not exists(root + '.probs'):
+    if not os.path.exists(root + '.probs'):
         return
 
-    if not exists(outdir):
+    if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     ids = cat.get('segmid', cat.id).round().astype(int)
@@ -152,14 +149,14 @@ def probplots(cat, root, outdir, zmax=7, redo=False):
 def webpage(cat, bpzroot, outfile, ncolor=1, idfac=1.):
     fout = open(outfile, 'w')
 
-    coloraddons = list(string.lowercase)
+    coloraddons = list(string.ascii_lowercase)
     coloraddons[0] = ''
     coloraddons = coloraddons[:ncolor]
 
     bpzpath = os.environ.get('BPZPATH')
-    inroll = join(bpzpath, 'plots')
+    inroll = os.path.join(bpzpath, 'plots')
     if 0:
-        inroll = join(inroll, 'rollover.txt')
+        inroll = os.path.join(inroll, 'rollover.txt')
         for line in loadfile(inroll, keepnewlines=1):
             fout.write(line)
 
@@ -173,7 +170,7 @@ def webpage(cat, bpzroot, outfile, ncolor=1, idfac=1.):
         id = ids[i]
         segmid = segmids[i]
         id2 = id * idfac
-        fout.write('Object #%s' % num2str(id2))
+        fout.write('Object #%s' % str(int(id2))) #num2str(id2))
         # fout.write('Object #%d' % id)
         if 'zb' in cat.labels:
             fout.write(' &nbsp; BPZ = %.2f' % cat.zb[i])
@@ -224,7 +221,7 @@ def run():
     bpzroot = sys.argv[1]
     #cat = loadcat(bpzroot+'.cat')
     #cat = loadcat(bpzroot+'_photbpz.cat')
-    cat = loadcat(bpzroot + '_bpz.cat')
+    cat = coeio.loadcat(bpzroot + '_bpz.cat')
 
     ids = None
     mycat = cat
@@ -241,7 +238,7 @@ def run():
                     i = int(id_str[1:])
                     mycat = cat.take(array([i + 1]))
                 else:
-                    lo, hi = string.split(num, '-')
+                    lo, hi = num.split('-')
                     lo = lo or 1
                     lo = int(lo)
                     hi = int(hi)
@@ -252,9 +249,9 @@ def run():
                 ids = stringsplitatoi(id_str, ',')
                 mycat = cat.takeids(ids)
 
-    params = params_cl()
+    params = coeio.params_cl()
     outdir = params.get('DIR', 'html')
-    if not exists(outdir):
+    if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     if 0:
@@ -288,22 +285,22 @@ def run():
     if redo == None:
         redo = True
 
-    ltrs = list(string.lowercase)
+    ltrs = list(string.ascii_lowercase)
     ltrs[0] = ''
 
     colorfiles = []
     if 0:
         for colorfile, addon in zip(colorfiles, ltrs):
-            colorstamps(mycat, join(outdir, 'colorstamps'),
+            colorstamps(mycat, os.path.join(outdir, 'colorstamps'),
                         colorfile, addon, offset)  # id x y
 
-        segmstamps(mycat, join(outdir, 'segm'),
+        segmstamps(mycat, os.path.join(outdir, 'segm'),
                    segmfile, segmoffset)  # id/segmid x y
 
-    sedplots(mycat, bpzroot, join(outdir, 'sedplots'), redo=redo)  # id
-    probplots(mycat, bpzroot, join(outdir, 'probplots'),
+    sedplots(mycat, bpzroot, os.path.join(outdir, 'sedplots'), redo=redo)  # id
+    probplots(mycat, bpzroot, os.path.join(outdir, 'probplots'),
               zmax=zmax, redo=redo)  # id
-    webpage(mycat, bpzroot, join(outdir, 'index.html'),
+    webpage(mycat, bpzroot, os.path.join(outdir, 'index.html'),
             len(colorfiles), idfac=idfac)  # id segmid
 
 

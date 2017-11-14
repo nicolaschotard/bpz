@@ -68,7 +68,7 @@ def recapfile(name, ext):
     """CHANGE FILENAME EXTENSION"""
     if ext[0] != '.':
         ext = '.' + ext
-    i = string.rfind(name, ".")
+    i = name.rfind(".")
     if i == -1:
         outname = name + ext
     else:
@@ -96,7 +96,7 @@ def decapfile(name, ext=''):
         if name[-n:] == ext:
             name = name[:-n]
     else:
-        i = string.rfind(name, '.')
+        i = name.rfind('.')
         if i > -1:
             name = name[:i]
     return name
@@ -258,7 +258,7 @@ def loaddict(filename, dir="", silent=0):
             words = line.split()
             key = str2num(words[0])
             val = ''  # if nothing there
-            valstr = string.join(words[1:], ' ')
+            valstr = ' '.join(words[1:])
             valtuple = False
             if valstr[0] in '[(' and valstr[-1] in '])':  # LIST / TUPLE!
                 valtuple = valstr[0] == '('
@@ -324,7 +324,7 @@ def loadcols(infile, format='', pl=0):
                 for iword in range(len(words)):
                     if iword > len(format) - 1:
                         print('EXTRA CONTENT IN LINE: ', end=' ')
-                        print(string.join(words[iword:]))
+                        print(''.join(words[iword:]))
                         break
                     # print iword
                     word = words[iword]
@@ -1045,7 +1045,7 @@ def loadvars(filename, dir="", silent=0):
         filename += '+'
     data = loaddata(filename, dir, silent)
     labels = header[-1][1:].split()
-    labelstr = string.join(labels, ',')
+    labelstr = ','.join(labels)
     print(labelstr + ' = data')
     # STRING TO BE EXECUTED AFTER EXIT
     return 'from coeio import data,labels,labelstr\n' + labelstr + ' = data'
@@ -1491,7 +1491,7 @@ class VarsClass(object):
                             description1 = description
                             description2 = ''
                         else:
-                            i = string.rfind(description[:45], ' ')
+                            i = description[:45].rfind(' ')
                             description1 = description[:i] + '...'
                             description2 = '...' + description[i + 1:]
                         prihdr.update('TTYPE%d' %
@@ -1776,7 +1776,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     # ma1 = mag_aper   ema1 = error for mag_aper
     # mb  = mag_auto   emb  = error for mag_auto
 
-    infile = join(dir, infile)
+    infile = infile.join(dir)
     if not silent:
         print("LOADING SExtractor catalog " + infile, end=' ')
 
@@ -1894,7 +1894,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     # print len(params)
 
     bigparamnames = params[:]
-    paramstr = string.join(params, ',')
+    paramstr = ','.join(params)
     # ASSIGN LAST COLUMN(S)
     ncols = nx - lastcol + 1
     paramcol[lastparam] = np.arange(ncols) + lastcol
@@ -1981,7 +1981,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
                 #exec(kk + '= take(data, col-1)')
                 outdata.append(np.ravel(take(data, col - 1)))
 
-    paramstr = string.join(params, ',')
+    paramstr = ','.join(params)
     #exec(paramstr + ' = outdata')
 
     # CALCULATE ell (IF NOT CALCULATED ALREADY)
@@ -2082,7 +2082,7 @@ def loadsexdict(sexfile):
                     key = words[0]
                     if key[0] != '#':
                         # sexdict[words[0]] = str2num(words[1])
-                        restofline = string.join(words[1:])
+                        restofline = ''.join(words[1:])
                         value = restofline.split('#')[0]
                         if value[0] == '$':
                             i = string.find(value, '/')

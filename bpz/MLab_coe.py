@@ -1098,7 +1098,8 @@ intround = roundint
 
 def singlevalue(x):
     """IS x A SINGLE VALUE?  (AS OPPOSED TO AN ARRAY OR LIST)"""
-    return type(x) in [type(None), float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
+    return not isinstance(x, (list, np.ndarray))
+    #return type(x) in [type(None), float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
 
 
 def roundn(x, ndec=0):
@@ -1601,7 +1602,7 @@ def max(m):
 def min(m):
     """min(m) returns the minimum along the first dimension of m.
     """
-    return minimum.reduce(m)
+    return np.minimum.reduce(m)
 
 # Actually from BASIS, but it fits in so naturally here...
 
