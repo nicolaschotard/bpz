@@ -14,129 +14,18 @@ possible to make this work the way it does in matlab if that's desired.
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-# I CHANGED median -- DC
-# I ADDED thetastd -- DC
-# I ADDED histogram -- DC
-# avgstd2, std2, sum, total, size, divisible, ndec, interp, bilin
-# HAD TO REMOVE RandomArray BECAUSE OF AN ERROR:
-#   ImportError: ld.so.1: python: fatal: /home/coe/python/ranlib.so: wrong ELF data format: ELFDATA2LS
 
-from builtins import map
-from builtins import range
-from builtins import object
 from past.utils import old_div
 import numpy as np
-from bisect import bisect
-from scipy.integrate import quad
 from scipy.special import erf
-from numpy import random
-import string
-from numpy.linalg import eig, svd
 from scipy.optimize import golden
 import numpy.random as RandomArray
-import math
-
-
-def argmin2d(a):
-    i = np.argmin(a.flat)
-    ny, nx = a.shape
-    iy = old_div(i, nx)
-    ix = i % nx
-    return iy, ix
-
-
-def argmax2d(a):
-    i = np.argmax(a.flat)
-    ny, nx = a.shape
-    iy = old_div(i, nx)
-    ix = i % nx
-    return iy, ix
-
-
-def matrix_multiply(MM):
-    """Multiplies a list of matrices: M[0] * M[1] * M[2]..."""
-    P = MM[0]
-    for M in MM[1:]:
-        P = np.dot(P, M)
-    return P
-
-
-def sinn(x):
-    """
-    x < 0: sin
-    x > 0: sinh
-    """
-    if x < 0:
-        return np.sin(x)
-    else:
-        return np.sinh(x)
 
 
 def multiples(lo, hi, x=1, eps=1e-7):
     """Returns an array of the multiples of x between [lo,hi] inclusive"""
     l = np.ceil(old_div((lo - eps), x)) * x
     return np.arange(l, hi + eps, x)
-
-
-def multiples2(lohi, x=1, eps=1e-7):
-    """Returns an array of the multiples of x between [lo,hi] inclusive"""
-    lo, hi = lohi
-    return multiples(lo, hi, x, eps)
-
-
-def multipleslog(lo, hi):
-    """Returns an array of the log multiples between [lo,hi] inclusive.
-    That didn't make sense, but what I'm trying to say is:
-    multipleslog(2, 30) = 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30"""
-    loglo = np.log10(lo)
-    loghi = np.log10(hi)
-    ll = multiples(loglo, loghi)
-    ll = np.concatenate([[loglo], ll, [loghi]])
-    mm = []
-    for i in range(len(ll) - 1):
-        lo = 10 ** ll[i]
-        hi = 10 ** ll[i + 1]
-        ex = 10 ** np.floor(ll[i])
-        m1 = multiples(lo, hi, ex)
-        if len(mm):
-            if close(m1[0], mm[-1]):
-                m1 = m1[1:]
-        mm = np.concatenate([mm, m1])
-    return mm
-
-
-def multiples2log(lohi):
-    """Returns an array of the log multiples between [lo,hi] inclusive.
-    That didn't make sense, but what I'm trying to say is:
-    multipleslog(2, 30) = 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30"""
-    lo, hi = lohi
-    return multipleslog(lo, hi)
-
-
-def onlyids(data, ids):
-    """ALTERS ARRAY data TO INCLUDE ONLY NUMBERS IN ids
-    ALL OTHER VALUES SET TO zero"""
-    keys = np.arange(data.size)
-
-    keysc = np.compress(data.flat, keys)
-    valsc = np.compress(data.flat, data.flat)
-
-    mask = np.zeros(data.size)
-    for id in ids:
-        ee = np.equal(valsc, id)
-        mask = np.logical_or(mask, ee)
-
-    keyscm = np.compress(mask, keysc)
-    valscm = np.compress(mask, valsc)
-
-    datanew = np.zeros(data.shape)
-    datanew.put(keyscm, valscm)
-
-    return datanew
-
-
-def cliplohi(xlo, xhi, xmin, xmax):
-    return max([xlo, xmin]), min([xhi, xmax])
 
 
 def base(b, nums):
@@ -152,128 +41,6 @@ def base(b, nums):
 
 def strbegin(str, phr):  # coetools.py
     return str[:len(phr)] == phr
-
-
-def minsec(x, format=(), precision=None):
-    """
-    CONVERTS decimal degrees/hours to degrees/hours : minutes : seconds
-    minsec(13.52340987)
-    minsec(13.52340987, ':')
-    minsec(13.52340987, 'hms')
-    minsec(13.52340987, 'dms')
-    minsec(13.52340987, 'dms', 1)
-    """
-    f, i = math.modf(x)
-    i = int(i)
-    m = 60 * f
-    s, m = math.modf(m)
-    m = int(m)
-    s = 60 * s
-    if type(format) == str:
-        if precision == None:
-            s = '%f' % s
-        else:
-            fmt = '%%.%df' % precision
-            s = fmt % s
-        if strbegin(s, '60'):  # rounded up
-            s = '0'
-            m = m + 1
-        m = '%d' % m
-        if m == '60':  # rounded up
-            m = '0'
-            i += 1
-        i = '%d' % i
-        ims = (i, m, s)
-        if len(format) == 1:
-            out = string.join(ims, format)
-        elif len(format) == 3:
-            out = i + format[0] + m + format[1] + s + format[2]
-    else:
-        out = (i, m, s)
-    return out
-
-
-def sec2hms(x, precision=0, mpersist=True):
-    """
-    CONVERTS decimal seconds to hours : minutes : seconds
-    """
-    out = ''
-    if x > 60:
-        if x > 3600:
-            h = int(old_div(x, 3600))
-            out = '%d:' % h
-            x = x - 3600 * h
-        m = int(old_div(x, 60))
-        out += '%d:' % m
-        x = x - 60 * m
-    elif mpersist:
-        out = '0:'
-    if precision == None:
-        fmt = '%g'
-    elif precision == 0:
-        fmt = '%d'
-    else:
-        fmt = '%%.%df' % precision
-    s = fmt % x
-    if (x < 10) and mpersist:
-        s = '0' + s
-    out += s
-    return out
-
-
-def sec2yr(x, precision=0, mpersist=True):
-    """
-    CONVERTS decimal seconds to years, months, days, hours : minutes : seconds
-    """
-    out = ''
-    minsec = 60  # minute
-    if x > minsec:  # minutes
-        hoursec = minsec * 60  # hour
-        if x > hoursec:  # hours
-            daysec = 24 * hoursec  # day
-            if x > daysec:  # days
-                yearsec = 365.25 * daysec
-                monthsec = old_div(yearsec, 12.)
-                if x > monthsec:  # months
-                    if x > yearsec:  # years
-                        y = int(old_div(x, yearsec))
-                        out = '%d years, ' % y
-                        x = x - y * yearsec
-                    months = int(old_div(x, monthsec))
-                    out += '%d months, ' % months
-                    x = x - months * monthsec
-                d = int(old_div(x, daysec))
-                out += '%d days, ' % d
-                x = x - d * daysec
-            h = int(old_div(x, 3600))
-            out += '%d hours, ' % h
-            x = x - 3600 * h
-        m = int(old_div(x, 60))
-        out += '%d minutes, ' % m
-        x = x - 60 * m
-    elif mpersist:
-        out = '0 minutes, '
-    if precision == None:
-        fmt = '%g'
-    elif precision == 0:
-        fmt = '%d'
-    else:
-        fmt = '%%.%df' % precision
-    s = fmt % x
-    if (x < 10) and mpersist:
-        s = '0' + s
-    out += s
-    out += ' seconds'
-    return out
-
-
-sec2yr(33333333333)
-
-minsec = 60  # minute
-hoursec = minsec * 60  # hour
-daysec = 24 * hoursec  # day
-yearsec = 365.25 * daysec
-monthsec = old_div(yearsec, 12.)
 
 
 def prange(x, xinclude=None, margin=0.05):
@@ -302,28 +69,6 @@ def minmax(x, range=None):
         good = between(lo, x, hi)
         x = np.compress(good, x)
     return min(x), max(x)
-
-
-def rescale(x, lohi):
-    lo, hi = lohi
-    xlo, xhi = minmax(x)
-    dx = xhi - xlo
-    dy = hi - lo
-    y = x / dx * dy + lo
-    return y
-
-
-def inrange(x, r):
-    lo, hi = minmax(r)
-    return between(lo, x, hi)
-
-
-def pairs(x):
-    p = []
-    for i in range(len(x)):
-        for j in range(i + 1, len(x)):
-            p.append((x[i], x[j]))
-    return p
 
 
 def Psig(P, nsigma=1):
@@ -360,8 +105,6 @@ def gaussbtw(nsig1, nsig2):
     """FRACTION BETWEEN nsig1, nsig2"""
     return abs(gaussp(nsig2) - gaussp(nsig1))
 
-#gaussbtw(0, 3)
-
 
 sigma = gaussin
 
@@ -385,179 +128,6 @@ def xsigmom(x, y):
     return mom2(x + dx, y)
 
 
-def testxsigmom():
-    x = np.mgrid[-5:5:100001j]
-    g = gauss1(abs(x - 0.98765), 0.123456789)
-    print(xsig(x, g))
-    print(xsigmom(x, g))
-
-    x = np.mgrid[-5:5:101j]
-    g = gauss1(abs(x - 0.98765), 0.123456789)
-    print(xsig(x, g))
-    print(xsigmom(x, g))
-
-###
-
-
-def pick(x):
-    n = len(x)
-    i = np.random_integers(n)
-    return x[i - 1]
-
-
-def randrange(N=1):
-    return (2 * random(N) - 1)
-
-
-def randrange2(lo, hi, N=1):
-    return ((hi - lo) * random(N) + lo)
-
-
-class PDraw(object):
-    def __init__(self, x, P):
-        self.x = x
-        self.P = P
-        self.Pcum = cumsum(P)
-        self.N = self.Pcum[-1]
-
-    def draw(self, n=1):
-        r = self.N * random(n)
-        i = searchsorted(self.Pcum, r)
-        return take(self.x, i)
-
-
-def hypotsq(dx, dy):
-    return dx**2 + dy**2
-
-
-def hypotn(x):
-    return np.sqrt(sum(x**2))
-
-
-def hypotnn(*x):
-    return hypotn(np.array(x))
-
-#hypotnn(3, 4, 5)
-
-
-def hypotxy(x1, y1, x2, y2):
-    return np.hypot(x1 - x2, y1 - y2)
-
-
-def hypotinvn(x):
-    return old_div(1, np.sqrt(sum(old_div(1., x**2))))
-
-
-def hypotinvnn(*x):
-    return hypotinvn(np.array(x))
-
-
-def hypotinv(x, y):
-    return hypotinvnn(x, y)
-
-
-def subtend(x1, y1, x2, y2):
-    """ANGLE SUBTENDED BY TWO VECTORS (wrt THE ORIGIN)"""
-    # v1 (dot) v2 = |v1| |v2| cos(theta)
-    # d = r1 r2 cos(theta)
-    d = np.dot([x1, y1], [x2, y2])
-    r1 = np.hypot(x1, y1)
-    r2 = np.hypot(x2, y2)
-    costheta = old_div(d, (r1 * r2))
-    theta = np.arccos(costheta)
-    return theta
-
-
-def subtends(x, y):
-    n = len(x)
-    dd = []
-    for i in range(n - 1):
-        for j in range(i + 1, n):
-            dd.append(subtend(x[i], y[i], x[j], y[j]))
-    return np.array(dd)
-
-
-def distances(x, y):
-    n = len(x)
-    dd = []
-    for i in range(n - 1):
-        for j in range(i + 1, n):
-            dd.append(hypot(x[i] - x[j], y[i] - y[j]))
-    return np.array(dd)
-
-
-def differences(x):
-    n = len(x)
-    dd = []
-    for i in range(n - 1):
-        for j in range(i + 1, n):
-            dd.append(x[i] - x[j])
-    return np.array(dd)
-
-
-def nrange(x, n=100):
-    """n EQUALLY-SPACED SAMPLES ON THE RANGE OF x"""
-    return arange(n) / (n - 1.) * (max(x) - min(x)) + min(x)
-
-
-def range01(n=100):
-    """n EQUALLY-SPACED SAMPLES ON THE RANGE OF [0,1]"""
-    return old_div(arange(n), (n - 1.))
-
-
-def middle(x):
-    return old_div((max(x) + min(x)), 2.)
-
-
-def within(A, xc, yc, ro, yesorno=0):  # --DC
-    """RETURNS WHETHER EACH PIXEL OF AN ARRAY IS WITHIN A CIRCLE
-    DEFINED ON THE ARRAY'S COORDINATES.
-    FRACTIONAL MEMBERSHIP IS ALSO ESTIMATED
-    BY THE FRACTION OF THE BOX CROSSED BY THE CIRCLE AT THAT ANGLE.
-    IT'S LIKE ANTI-ALIASING.
-    THESE FRACTIONS ARE SLIGHTLY OVERESTIMATED
-    BUT ARE AN IMPROVEMENT OVER NOT USING THEM AT ALL!
-    TO TURN OFF FRACTIONS AND JUST RETURN True/False, SET yesorno=1"""
-    ny, nx = A.shape
-    a = np.ones((ny, nx))
-    y = np.arange(ny)
-    x = np.arange(nx)
-    x, y = np.meshgrid(x, y)
-    x = x - xc + 0.
-    y = y - yc + 0.
-    r = np.hypot(x, y)
-    xy = abs(divsafe(x, y, nan=0))
-    yx = abs(divsafe(y, x, nan=0))
-    m = min([xy, yx])
-    dr = np.hypot(1, m)  # = 1 ON AXES, sqrt(2) ON DIAGONALS
-
-    if (ro - xc > 0.5) or (ro - yc > 0.5) \
-            or (ro + xc > nx - 0.5) or (ro + yc > ny - 0.5):
-        print('WARNING: CIRCLE EXTENDS BEYOND BOX IN MLab_coe.within')
-
-    if yesorno:
-        v = np.less_equal(r, ro)  # TRUE OR FALSE, WITHOUT FRACTIONS
-    else:
-        v = np.less_equal(r, ro - 0.5 * dr) * 1
-        v = v + between(ro - 0.5 * dr, r, ro + 0.5 * dr) * \
-            (ro + 0.5 * dr - r) / dr
-
-    # if showplot:  matplotlib NOT LOADED IN MLab_coe
-    if 0:
-        matshow(v)
-        circle(xc + 0.5, yc + 0.5, ro, color='k', linewidth=2)
-
-    return v
-
-# def sumwithin(A, xc, yc, ro, showplot=0):
-#    return total(A * within(A, xc, yc, ro, showplot=showplot))
-
-
-def sumwithin(A, xc, yc, ro):
-    """RETURNS SUM OF ARRAY WITHIN CIRCLE DEFINED ON ARRAY'S COORDINATES"""
-    return total(A * within(A, xc, yc, ro))
-
-
 def floatin(x, l, ndec=3):
     """IS x IN THE LIST l?
     WHO KNOWS WITH FLOATING POINTS!"""
@@ -565,54 +135,6 @@ def floatin(x, l, ndec=3):
     l = (np.array(l) * 10**ndec + 0.1).astype(int).tolist()
     return x in l
 
-
-def floatindex(x, l, ndec=3):
-    """IS x IN THE LIST l?
-    WHO KNOWS WITH FLOATING POINTS!"""
-    x = int(x * 10**ndec + 0.1)
-    l = (np.array(l) * 10**ndec + 0.1).astype(int).tolist()
-    return l.index(x)
-
-
-def integral(f, x1, x2):
-    return quad(f, x1, x2)[0]
-
-
-def magnify(a, n):
-    """MAGNIFIES A MATRIX BY n
-    YIELDING, FOR EXAMPLE:
-    >>> magnify(IndArr(3,3), 2)
-    001122
-    001122
-    334455
-    334455
-    667788
-    667788
-    """
-    ny, nx = a.shape
-    a = np.repeat(a, n**2)
-    a = np.reshape(a, (ny, nx, n, n))
-    a = np.transpose(a, (0, 2, 1, 3))
-    a = np.reshape(a, (n * ny, n * nx))
-    return a
-
-
-def demagnify(a, n, func='mean'):
-    """DEMAGNIFIES A MATRIX BY n
-    YIELDING, FOR EXAMPLE:
-    >>> demagnify(magnify(IndArr(3,3), 2), 2)
-    012
-    345
-    678
-    """
-    ny, nx = old_div(np.array(a.shape), n)
-    a = a[:ny * 8, :nx * 8]  # Trim if not even multiples
-    a = np.reshape(a, (ny, n, nx, n))
-    a = np.transpose(a, (0, 2, 1, 3))
-    a = np.reshape(a, (ny, nx, n * n))
-    a = np.transpose(a, (2, 0, 1))
-    exec('a = %s(a)' % func)
-    return a
 
 # Elementary Matrices
 
@@ -666,60 +188,6 @@ def insidepoly(xp, yp, xx, yy):
         inhull.append(inhull1)
 
     return np.array(inhull).astype(int)
-
-
-# TESTED IN ~/glens/lenspoints/optdefl/sourceconstraints/testconvexhull.py
-#  testinsidepoly() -- NEVER QUITE GOT THE TEST TO WORK HERE
-def insidepolyshwag(xp, yp, xx, yy):
-    """DETERMINES WHETHER THE POINTS (xx, yy)
-    ARE INSIDE THE CONVEX POLYGON DELIMITED BY (xp, yp)"""
-    xp, yp = CCWsort(xp, yp)  # NEEDED
-    xp = xp.tolist()
-    yp = yp.tolist()
-    if xp[-1] != xp[0]:
-        xp.append(xp[-1])  # SHOULD BE [0]
-        yp.append(yp[-1])  # SHOULD BE [0]
-
-    xo = mean(xp)
-    yo = mean(yp)
-    xx = np.ravel(listo(xx))
-    yy = np.ravel(listo(yy))
-    inhull = np.ones(len(xx)).astype(int)
-    for i in range(len(xx)):
-        if i and not (i % 10000):
-            print('%d / %d' % (i, len(xx)))
-        xa = [xo, xx[i]]
-        ya = [yo, yy[i]]
-        for j in range(len(xp) - 2):
-            xb = xp[j:j + 2]
-            yb = yp[j:j + 2]
-            if linescross2(xa, ya, xb, yb):
-                inhull[i] = 0
-                break
-
-    return inhull
-
-
-def testinsidepoly():
-    #from numpy.random import random
-    N = 40
-    x = random(50) * N
-    y = random(50) * N
-    xh, yh = convexhull(x, y)
-    zz = np.arange(N)
-    xx, yy = np.meshgrid(zz, zz)
-    xx = np.ravel(xx)
-    yy = np.ravel(yy)
-    inhull = insidepoly(xh, yh, xx, yy)
-    figure(11)
-    clf()
-    plot(xh, yh)
-    ioff()
-    for i in range(len(XX)):
-        color = ['r', 'g'][ininin[i]]
-        p = plot([xx[i]], [yy[i]], 'o', mfc=color)
-
-    show()
 
 
 def p2p(x):  # DEFINED AS ptp IN MLab (BELOW)
@@ -812,35 +280,6 @@ def linescross2(xa, ya, xb, yb):
     return crossa and crossb
 
 
-def linescross2test():
-    # from numpy.random import random
-    xa = random(2)
-    ya = random(2)
-    xb = random(2)
-    yb = random(2)
-
-    figure(1)
-    clf()
-    plot(xa, ya)
-    plot(xb, yb)
-    title('%s' % linescross2(xa, ya, xb, yb))
-    show()
-
-
-def linescrosstest():
-    # from random import random
-    xa = random(), random()
-    ya = random(), random()
-    xb = random(), random()
-    yb = random(), random()
-
-    figure(1)
-    clf()
-    atobplot(xa, ya, xb, yb, linetype='')
-    title('%s' % linescross(xa, ya, xb, yb))
-    show()
-
-
 def outside(x, y, xo, yo):
     """GIVEN 3 POINTS a, b, c OF A POLYGON 
     WITH CENTER xo, yo
@@ -855,8 +294,6 @@ def outside(x, y, xo, yo):
     xB = (xb, xc)
     yB = (yb, yc)
     return linescross(xA, yA, xB, yB)
-
-# TESTED IN ~/glens/lenspoints/optdefl/sourceconstraints/testconvexhull.py
 
 
 def convexhull(x, y, rep=1, nprev=0):
@@ -927,59 +364,6 @@ def atanxy(x, y, degrees=0):
     return theta
 
 
-def chebyshev(x, n):
-    if n == 0:
-        return x ** 0
-    elif n == 1:
-        return x
-    elif n == 2:
-        return 2 * x ** 2 - 1
-    elif n == 3:
-        return 4 * x ** 3 - 3 * x
-    elif n == 4:
-        return 8 * x ** 4 - 8 * x ** 2
-    elif n == 5:
-        return 16 * x ** 5 - 20 * x ** 3 + 5 * x
-    elif n == 6:
-        return 32 * x ** 6 - 48 * x ** 4 + 18 * x ** 2 - 1
-
-
-def chebyshev2d(x, y, a):
-    A = x * 0
-    ncy, ncx = a.shape
-    for iy in range(ncy):
-        for ix in range(ncx):
-            if a[iy][ix]:
-                A = A + a[iy][ix] * chebyshev(x, ix) * chebyshev(y, iy)
-    return A
-
-
-def crossprod(a, b):
-    """CROSS PRODUCT (PROBABLY DEFINED IN SOME BUILT-IN MODULE!)"""
-    return a[0] * b[1] - a[1] * b[0]
-
-
-def dotprod(a, b):
-    """DOT PRODUCT (PROBABLY DEFINED IN SOME BUILT-IN MODULE!)"""
-    return a[0] * b[0] + a[0] * b[0]
-
-
-def triarea(x, y, dir=0):
-    """RETURNS THE AREA OF A TRIANGLE GIVEN THE COORDINATES OF ITS VERTICES
-    A = 0.5 * | u X v |
-    np.where u & v are vectors pointing from one vertex to the other two
-    and X is the cross-product
-    The dir flag lets you retain the sign (can tell if triangle is flipped)"""
-    ux = x[1] - x[0]
-    vx = x[2] - x[0]
-    uy = y[1] - y[0]
-    vy = y[2] - y[0]
-    A = 0.5 * (ux * vy - uy * vx)
-    if not dir:
-        A = abs(A)
-    return A
-
-
 def CCWsort(x, y):
     """FOR A CONVEX SET OF POINTS, 
     SORT THEM SUCH THAT THEY GO AROUND IN ORDER CCW FROM THE x-AXIS"""
@@ -992,59 +376,9 @@ def CCWsort(x, y):
     return x2, y2
 
 
-def polyarea(x, y):
-    """RETURNS THE AREA OF A CONVEX POLYGON 
-    GIVEN ITS COORDINATES (IN ANY ORDER)"""
-    A = 0.
-    x, y = CCWsort(x, y)
-    for i in range(1, len(x) - 1):
-        xtri = x.take((0, i, i + 1), 0)
-        ytri = y.take((0, i, i + 1), 0)
-        A += triarea(xtri, ytri)
-    return A
-
-
 def odd(n):
     """RETURNS WHETHER AN INTEGER IS ODD"""
     return n & 1
-
-
-def even(n):
-    """RETURNS WHETHER AN INTEGER IS EVEN"""
-    return 1 - odd(n)
-
-
-def fpart(x):
-    """FRACTIONAL PART OF A REAL NUMBER"""
-    if type(x) in [np.array, list]:
-        if len(x) == 1:
-            x = x[0]
-    return math.modf(x)[0]
-
-
-def sigrange(x, nsigma=1):
-    lo = percentile(gausst(nsigma), x)
-    hi = percentile(gaussp(nsigma), x)
-    return lo, hi
-
-
-def sqrtsafe(x):
-    """sqrt(x) OR 0 IF x < 0"""
-    x = clip2(x, 0, None)
-    return np.sqrt(x)
-
-
-def sgn(a):
-    return np.where(a, np.where(np.greater(a, 0), 1, -1), 0)
-
-
-def sym8(a):
-    """OKAY, SO THIS ISN'T QUITE RADIAL SYMMETRY..."""
-    x = a + flipud(a) + fliplr(a) + np.transpose(a) + \
-        rot90(np.transpose(a), 2) + rot90(a, 1) + rot90(a, 2) + rot90(a, 3)
-    return old_div(x, 8.)
-
-# def divsafe(a, b, inf=1e30, nan=0.):
 
 
 def divsafe(a, b, inf=np.Inf, nan=np.NaN):
@@ -1060,22 +394,6 @@ def divsafe(a, b, inf=np.Inf, nan=np.NaN):
     bb = bsgn * babs
     # return np.where(b, a / bb, np.where(a, Inf, NaN))
     return np.where(b, old_div(a, bb), np.where(a, sgn * inf, nan))
-
-
-def expsafe(x):
-    x = np.array(x)
-    y = []
-    for xx in x:
-        if xx > 708:
-            y.append(1e333)  # inf
-        elif xx < -740:
-            y.append(0)
-        else:
-            y.append(exp(xx))
-    if len(y) == 1:
-        return y[0]
-    else:
-        return np.array(y)
 
 
 def floorint(x):
@@ -1119,27 +437,8 @@ def percentile(p, x):
     return interp(i, np.arange(len(x)), x)
 
 
-def percentile2(v, x):
-    return old_div(searchsorted(sort(x), v), float(len(x)))
-
-
 def logical(x):
     return np.where(x, 1, 0)
-
-
-def element_or(*l):
-    """l is a list/tuple of np.arrays
-    USAGE: x = element_or(a, b, c)"""
-    x = np.where(l[0], l[0], l[1])
-    for i in range(2, len(l)):
-        x = np.where(x, x, l[2])
-    return x
-
-
-def log2(x, loexp=''):
-    if loexp != '':
-        x = clip2(x, 2**loexp, None)
-    return old_div(np.log10(x), np.log10(2))
 
 
 def log10clip(x, loexp, hiexp=None):
@@ -1147,10 +446,6 @@ def log10clip(x, loexp, hiexp=None):
         return np.log10(clip2(x, 10.**loexp, None))
     else:
         return np.log10(clip2(x, 10.**loexp, 10.**hiexp))
-
-
-def lnclip(x, loexp):
-    return log(clip2(x, e**loexp, None))
 
 
 def linreg(X, Y):
@@ -1172,7 +467,6 @@ def linreg(X, Y):
     It also prints to &lt;stdout&gt; 
     few other data, N, a, b, R^2, s^2, 
     which are useful in assessing the confidence of estimation. """
-    #from math import sqrt
     if len(X) != len(Y):
         raise ValueError('unequal length')
     N = len(X)
@@ -1400,7 +694,6 @@ def interp1(x, xdata, ydata, silent=0):  # --DC
             print(x, 'OUT OF RANGE in interp in MLab_coe.py')
         return ydata[0]
     else:
-        # i = bisect(xdata, x)  # SAME UNLESS EQUAL
         i = searchsorted(xdata, x)
         if xdata[i] == x:
             return ydata[i]
@@ -1541,8 +834,6 @@ def flipud(m):
     if len(m.shape) != 2:
         raise ValueError("Input must be 2-D.")
     return m[::-1]
-
-# reshape(x, m, n) is not used, instead use reshape(x, (m, n))
 
 
 def rot90(m, k=1):
@@ -1745,20 +1036,11 @@ def clip2(m, m_min=None, m_max=None):
     return np.clip(m, m_min, m_max)
 
 
-# def sum(m):
-# """sum(m) returns the sum of the elements along the first
-# dimension of m.
-# """
-# return np.add.reduce(m)
 sum = np.add.reduce  # ALLOWS FOR AXIS TO BE INPUT --DC
 
 
 def total(m):
     """RETURNS THE TOTAL OF THE ENTIRE ARRAY --DC"""
-##     t = m
-# while not(type(t) in [type(1), type(1.)]):
-##      t = sum(t)
-# return t
     return sum(ravel(m))
 
 
@@ -1795,7 +1077,7 @@ def cumprod(m):
 def trapz(y, x=None):
     """trapz(y,x=None) integrates y = f(x) using the trapezoidal rule.
     """
-    if x == None:
+    if x is None:
         d = 1
     else:
         d = diff(x)
@@ -1846,71 +1128,6 @@ def shorten(x, n=1):  # shrink
         return a
 
 
-def lengthen(x, n):  # expand
-    """lengthen([0, 1, 5], 4) ==> 0, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5"""
-    x = np.array(x)
-    d = diff(x)
-    i = old_div(arange(n), float(n))
-    o = outer(i, d)
-    o = o + x[:-1]
-    o = ravel(transpose(o))
-    o = np.concatenate((o, [x[-1]]))
-    return o
-
-
-def powerlaw(x, y):
-    """RETURNS EXPONENT n TO POWER LAW FIT y ~ x^n
-    AT POINTS ON AVERAGED x"""
-    # d log y / d log x = (dy / dx) * (x / y)
-    # d log x = dx / x
-    logx = log10(x)
-    logy = log10(y)
-
-    dlogx = diff(logx)
-    dlogy = diff(logy)
-
-    dd = old_div(dlogy, dlogx)
-    #x2 = (x[1:] + x[:-1]) / 2
-    logx2 = shorten(logx)
-    x2 = 10**logx2
-
-    return x2, dd
-
-
-def grad(m):
-    """Calculates the gradient of the matrix m using the finite difference method
-    The result will be 2 arrays, one for each of the axes x & y, respectively,
-    with each having dimension (N-2, N-2), where m was (N, N).
-    The coordinates will be in between of those of m.  --DC"""
-    ay = old_div((m[2:] - m[:-2]), 2.)       # (N-2, N)
-    ax = old_div((m[:, 2:] - m[:, :-2]), 2.)     # (N,   N-2)
-    ay = ay[:, 1:-1]                    # (N-2, N-2)
-    ax = ax[1:-1, :]
-    return np.array([ax, ay])
-
-
-def laplacian(m):
-    """Calculates the laplacian of the matrix m
-    using the finite differencing method.
-    The result will have dimension (ny-2, nx-2) where m had (ny, nx).
-    see Fig. 2 of Bradac & Schneider 2005
-    (Strong & Weak Lensing United I)
-    although theirs is a factor of 1/2 too low.
-    """
-    ny, nx = m.shape
-    center = m[1:-1, 1:-1]
-
-    sides = zeros(center.shape, float)
-    for dx, dy in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
-        sides = sides + m[1 + dy:ny - 1 + dy, 1 + dx:nx - 1 + dx]
-
-    corners = zeros(center.shape, float)
-    for dx, dy in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-        corners = corners + m[1 + dy:ny - 1 + dy, 1 + dx:nx - 1 + dx]
-
-    return old_div((2 * corners - sides - 4 * center), 3.)
-
-
 def corrcoef(x, y=None):
     """The correlation coefficients
     """
@@ -1929,101 +1146,11 @@ def cov(m, y=None):
         sum_cov = sum_cov + multiply.outer(v, v)
     return old_div((sum_cov - len(m) * multiply.outer(mu, mu)), (len(m) - 1.0))
 
-# Added functions supplied by Travis Oliphant
-#import numpy.linalg.old as LinearAlgebra
-
-
-def squeeze(a):
-    "squeeze(a) removes any ones from the shape of a"
-    b = np.asarray(a.shape)
-    reshape(a, tuple(np.compress(np.not_equal(b, 1), b)))
-    return
-
-
-def kaiser(M, beta):
-    """kaiser(M, beta) returns a Kaiser window of length M with shape parameter
-    beta. It depends on the cephes module for the modified bessel function i0.
-    """
-    import cephes
-    n = arange(0, M)
-    alpha = old_div((M - 1), 2.0)
-    return old_div(cephes.i0(beta * sqrt(1 - (old_div((n - alpha), alpha))**2.0)), cephes.i0(beta))
-
-
-def blackman(M):
-    """blackman(M) returns the M-point Blackman window.
-    """
-    n = arange(0, M)
-    return 0.42 - 0.5 * cos(2.0 * pi * n / M) + 0.08 * cos(4.0 * pi * n / M)
-
-
-def bartlett(M):
-    """bartlett(M) returns the M-point Bartlett window.
-    """
-    n = arange(0, M)
-    return np.where(np.less_equal(n, old_div(M, 2.0)), 2.0 * n / M, 2.0 - 2.0 * n / M)
-
-
-def hanning(M):
-    """hanning(M) returns the M-point Hanning window.
-    """
-    n = arange(0, M)
-    return 0.5 - 0.5 * cos(2.0 * pi * n / M)
-
-
-def hamming(M):
-    """hamming(M) returns the M-point Hamming window.
-    """
-    n = arange(0, M)
-    return 0.54 - 0.46 * cos(2.0 * pi * n / M)
-
-
-def sinc(x):
-    """sinc(x) returns sin(pi*x)/(pi*x) at all points of array x.
-    """
-    return np.where(np.equal(x, 0.0), 1.0, old_div(sin(pi * x), (pi * x)))
-
 
 def histogram(a, bins):
     n = searchsorted(sort(a), bins)
     n = np.concatenate([n, [len(a)]])
     return n[1:] - n[:-1]
-
-
-def cumhisto(a, da=1., amin=[], amax=[]):  # --DC
-    """
-    Histogram of 'a' defined on the bin grid 'bins'
-       Usage: h=histogram(p,xp)
-    """
-    if amin == []:
-        amin = min(a)
-    if amax == []:
-        amax = max(a)
-    nnn = old_div((amax - amin), da)
-    if np.less(nnn - int(nnn), 1e-4):
-        amax = amax + da
-    bins = arange(amin, amax + da, da)
-    n = searchsorted(sort(a), bins)
-    n = np.array(list(map(float, n)))
-    return n[1:]
-
-
-def cumHisto(a, da=1., amin=[], amax=[]):  # --DC
-    if amin == []:
-        amin = min(a)
-    if amax == []:
-        amax = max(a)
-    h = cumhisto(a, da, amin, amax)
-    return Histogram(h, amin, da)
-
-
-def plotcumhisto(a, da=1., amin=[], amax=[]):  # --DC
-    p = FramedPlot()
-    p.add(cumHisto(a, da, amin, amax))
-    p.show()
-    return p
-
-# from useful_coe.py
 
 
 def histo(a, da=1., amin=[], amax=[]):  # --DC
@@ -2040,13 +1167,8 @@ def histo(a, da=1., amin=[], amax=[]):  # --DC
         amax = amax + da
     bins = np.arange(amin, amax + da, da)
     n = np.searchsorted(sort(a), bins)
-#    n=np.concatenate([n,[len(a)]])
     n = np.array(list(map(float, n)))
-# print a
-# print bins
-# print n
     return n[1:] - n[:-1]
-#    return hist(a, bins)
 
 
 def Histo(a, da=1., amin=[], amax=[], **other):  # --DC
@@ -2058,101 +1180,8 @@ def Histo(a, da=1., amin=[], amax=[], **other):  # --DC
         amin = amin[0]
     except:
         pass
-# print 'hi'
-# print da
-# print amin
-# print amax
     h = histo(a, da, amin, amax)
-# print h
     return Histogram(h, amin, da, **other)
-
-
-def plothisto(a, da=1., amin=[], amax=[]):  # --DC
-    p = FramedPlot()
-    p.add(Histo(a, da, amin, amax))
-    p.show()
-
-
-def bargraphbiggles(x, y, fill=1, color='black', **other):
-    n = len(x)
-    xx = np.repeat(x, 2)
-    y = y.astype(float)
-    z = np.array([0.])
-    yy = np.concatenate([z, np.repeat(y, 2), z])
-    zz = yy * 0
-
-    p = FramedPlot()
-    if fill:
-        p.add(FillBetween(xx, yy, xx, zz, color=color))
-    else:
-        p.add(Curve(xx, yy, color=color, **other))
-    p.show()
-
-
-def BarGraph(x, y, fill=1, color='black', bottom=0, **other):
-    n = len(x)
-    xx = np.repeat(x, 2)
-    y = y.astype(float)
-    z = np.array([0.])
-    yy = np.concatenate([z, np.repeat(y, 2), z])
-    zz = yy * 0 + bottom
-    if fill:
-        return FillBetween(xx, yy, xx, zz, color=color)
-    else:
-        return Curve(xx, yy, color=color, **other)
-
-
-def histob(a, da=1., amin=[], amax=[]):  # --DC
-    # NOTE searchsorted can't be counted on to act consistently
-    #   when bin values are equal to data values
-    # for example, neither 0.04 or 0.05 gets put in the 0.04-0.05 bin
-    #   0.04 gets put in the bin below, but 0.05 gets put in the bin above
-    # So it's good to stagger your bins values when necessary (0.035, 0.045, 0.055)
-    """
-    Histogram of 'a' defined on the bin grid 'bins'
-       Usage: h=histogram(p,xp)
-    """
-    if amin == []:
-        amin = min(a)
-    if amax == []:
-        amax = max(a)
-    # MAKE SURE 18 GOES IN THE 18-18.9999 bin (for da=1 anyway)
-    amin = amin - 1e-4
-    amax = amax + 1e-4
-    # if np.less(abs(amax - a[-1]), da*1e-4):
-    nnn = old_div((amax - amin), da)
-    if np.less(nnn - int(nnn), 1e-4):
-        amax = amax + da
-    #bins = arange(amin,amax+da,da)
-    bins = np.arange(amin, amax + da, da)
-    n = np.searchsorted(sort(a), bins)
-    n = np.array(list(map(float, n)))
-    n = n[1:] - n[:-1]
-    return (bins, n)
-
-
-def Histob(a, da=1., amin=[], amax=[], fill=1, color='black', bottom=0):
-    bins, n = histob(a, da, amin, amax)
-    return BarGraph(bins, n, fill=fill, color=color, bottom=bottom)
-
-
-def histov(a, bins, v, presorted=0):
-    """Total of values (v) in bins
-    (other historgrams just count number of elements in bins)"""
-    if not presorted:
-        SI = np.argsort(a)
-        a = np.take(a, SI)
-        v = np.take(v, SI)
-    vcum = cumsum(v)
-    i = np.searchsorted(a, bins)
-    i = i[1:] - 1
-    vcumi = vcum.take(i)
-    vcumi = np.concatenate([[0], vcumi])
-    vb = vcumi[1:] - vcumi[:-1]
-    return vb
-
-# def isNaN(x):
-#    return (x == 1) and (x == 0)
 
 
 def isNaN(x):
@@ -2166,4 +1195,3 @@ def isnan(x):
     n = np.logical_and(np.logical_not(l), np.logical_not(g))
     n = np.logical_and(n, np.logical_not(e))
     return n
-
