@@ -23,11 +23,9 @@ versions.
 from __future__ import division
 from __future__ import absolute_import
 
-from builtins import range
 from past.utils import old_div
 from . import func
-#from Numeric import *
-from numpy import *
+import numpy as np
 
 BadInput = "Bad xa input to routine splint."
 
@@ -48,15 +46,13 @@ class Spline(func.FuncOps):
         else:
             self.use_high_slope = 0
         self.calc_ypp()
-#	print self.use_low_slope
-#	print self.use_high_slope
 
     def calc_ypp(self):
         x_vals = self.x_vals
         y_vals = self.y_vals
         n = len(x_vals)
-        y2_vals = zeros(n, float)
-        u = zeros(n - 1, float)
+        y2_vals = np.zeros(n, float)
+        u = np.zeros(n - 1, float)
 
         if self.use_low_slope:
             u[0] = (old_div(3.0, (x_vals[1] - x_vals[0]))) * \
@@ -114,7 +110,7 @@ class Spline(func.FuncOps):
         if x >= self.x_vals[-1]:
             return self.y_vals[-1]
 
-        pos = searchsorted(self.x_vals, x)
+        pos = np.searchsorted(self.x_vals, x)
 
         h = self.x_vals[pos] - self.x_vals[pos - 1]
         if h == 0.0:
@@ -125,63 +121,3 @@ class Spline(func.FuncOps):
         return (a * self.y_vals[pos - 1] + b * self.y_vals[pos] +
                 ((a * a * a - a) * self.y2_vals[pos - 1] +
                  (b * b * b - b) * self.y2_vals[pos]) * h * h / 6.0)
-
-
-class LinInt(func.FuncOps):
-    def __init__(self, x_array, y_array):
-        self.x_vals = x_array
-        self.y_vals = y_array
-
-    # compute approximation
-    def __call__(self, arg):
-        "Simulate a ufunc; handle being called on an array."
-        if type(arg) == func.ArrayType:
-            return func.array_map(self.call, arg)
-        else:
-            return self.call(arg)
-
-    def call(self, x):
-        "Evaluate the interpolant, assuming x is a scalar."
-
-        # if out of range, return endpoint
-        if x <= self.x_vals[0]:
-            return self.y_vals[0]
-        if x >= self.x_vals[-1]:
-            return self.y_vals[-1]
-
-        pos = searchsorted(self.x_vals, x)
-
-        h = self.x_vals[pos] - self.x_vals[pos - 1]
-        if h == 0.0:
-            raise BadInput
-
-        a = old_div((self.x_vals[pos] - x), h)
-        b = old_div((x - self.x_vals[pos - 1]), h)
-        return a * self.y_vals[pos - 1] + b * self.y_vals[pos]
-
-
-def spline_interpolate(x1, y1, x2):
-    """
-    Given a function at a set of points (x1, y1), interpolate to
-    evaluate it at points x2.
-    """
-    sp = Spline(x1, y1)
-    return sp(x2)
-
-
-def logspline_interpolate(x1, y1, x2):
-    """
-    Given a function at a set of points (x1, y1), interpolate to
-    evaluate it at points x2.
-    """
-    sp = Spline(log(x1), log(y1))
-    return exp(sp(log(x2)))
-
-
-def linear_interpolate(x1, y1, x2):
-    """
-    Given a function at a set of points (x1, y1), interpolate to
-    evaluate it at points x2.
-    """
-    li = LinInt(x1, y1)
-    return li(x2)

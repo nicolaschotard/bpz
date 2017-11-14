@@ -13,17 +13,17 @@
 # some performance when the functions are used on scalar arguments,
 # but should give a big win on vectors.
 
-from builtins import range
-from builtins import object
-import numpy as Numeric
+#from builtins import range
+#from builtins import object
+import numpy as np
 #from Numeric import *
-from numpy import *
+#from numpy import *
 import operator
 import math
 from types import *
 
-ArrayType = type(asarray(1.0))
-UfuncType = type(Numeric.add)
+ArrayType = type(np.asarray(1.0))
+UfuncType = type(np.add)
 
 # unary function objects (maybe rename to UN_FUNC?)
 
@@ -39,22 +39,22 @@ class FuncOps(object):
         return UnCompose(self, f)
 
     def __add__(self, f):
-        return BinCompose(Numeric.add, self, f)
+        return BinCompose(np.add, self, f)
 
     def __sub__(self, f):
-        return BinCompose(Numeric.subtract, self, f)
+        return BinCompose(np.subtract, self, f)
 
     def __mul__(self, f):
-        return BinCompose(Numeric.multiply, self, f)
+        return BinCompose(np.multiply, self, f)
 
     def __div__(self, f):
-        return BinCompose(Numeric.divide, self, f)
+        return BinCompose(np.divide, self, f)
 
     def __neg__(self):
-        return UnCompose(Numeric.negative, self)
+        return UnCompose(np.negative, self)
 
     def __pow__(self, f):
-        return BinCompose(Numeric.power, self, f)
+        return BinCompose(np.power, self, f)
 
     def __coerce__(self, x):
         # if type(x) in [IntType, FloatType, LongType, ComplexType]:
@@ -71,10 +71,10 @@ class FuncOps(object):
             return self.call(arg)
 
     def exp(self):
-        return UnCompose(Numeric.exp, self)
+        return UnCompose(np.exp, self)
 
     def log(self):
-        return UnCompose(Numeric.log, self)
+        return UnCompose(np.log, self)
 
 
 # Bind a normal function
@@ -162,15 +162,15 @@ class BinFuncOps(object):
         return UnBinCompose(operator.neg, self)
 
     def reduce(self, a, axis=0):
-        result = take(a, [0], axis)
+        result = np.take(a, [0], axis)
         for i in range(1, a.shape[axis]):
-            result = self(result, take(a, [i], axis))
+            result = self(result, np.take(a, [i], axis))
         return result
 
     def accumulate(self, a, axis=0):
         n = len(a.shape)
-        sum = take(a, [0], axis)
-        out = zeros(a.shape, a.dtype.char)
+        sum = np.take(a, [0], axis)
+        out = np.zeros(a.shape, a.dtype.char)
         for i in range(1, a.shape[axis]):
             out[all_but_axis(i, axis, n)] = self(sum, take(a, [i], axis))
         return out
@@ -178,16 +178,16 @@ class BinFuncOps(object):
     def outer(self, a, b):
         n_a = len(a.shape)
         n_b = len(b.shape)
-        a2 = reshape(a, a.shape + (1,) * n_b)
-        b2 = reshape(b, (1,) * n_a + b.shape)
+        a2 = np.reshape(a, a.shape + (1,) * n_b)
+        b2 = np.reshape(b, (1,) * n_a + b.shape)
 
         # duplicate each array in the appropriate directions
         a3 = a2
         for i in range(n_b):
-            a3 = repeat(a3, (b.shape[i],), n_a + i)
+            a3 = np.repeat(a3, (b.shape[i],), n_a + i)
         b3 = b2
         for i in range(n_a):
-            b3 = repeat(b3, (a.shape[i],), i)
+            b3 = np.repeat(b3, (a.shape[i],), i)
 
         answer = array_map_2(self, a3, b3)
         return answer
@@ -208,49 +208,49 @@ def all_but_axis(i, axis, num_axes):
 
 
 # bind a binary function
-class BinFuncBinder(BinFuncOps):
-    def __init__(self, a_f):
-        self.f = a_f
-
-    def __call__(self, arg1, arg2):
-        return self.f(arg1, arg2)
+#class BinFuncBinder(BinFuncOps):
+#    def __init__(self, a_f):
+#        self.f = a_f
+#
+#    def __call__(self, arg1, arg2):
+#        return self.f(arg1, arg2)
 
 
 # bind single variables
-class BinVar1(BinFuncOps):
-    def __init__(self):
-        pass
+#class BinVar1(BinFuncOps):
+#    def __init__(self):
+#        pass
+#
+#    def __call__(self, arg1, arg2):
+#        return arg1
 
-    def __call__(self, arg1, arg2):
-        return arg1
 
-
-class BinVar2(BinFuncOps):
-    def __init__(self):
-        pass
-
-    def __call__(self, arg1, arg2):
-        return arg2
+#class BinVar2(BinFuncOps):
+#    def __init__(self):
+#        pass
+#
+#    def __call__(self, arg1, arg2):
+#        return arg2
 
 # bind individual variables within a binary function
 
 
-class Bind1st(FuncOps):
-    def __init__(self, a_f, an_arg1):
-        self.f = a_f
-        self.arg1 = an_arg1
+#class Bind1st(FuncOps):
+#    def __init__(self, a_f, an_arg1):
+#        self.f = a_f
+#        self.arg1 = an_arg1
+#
+#    def __call__(self, x):
+#        return self.f(self.arg1, x)
 
-    def __call__(self, x):
-        return self.f(self.arg1, x)
 
-
-class Bind2nd(FuncOps):
-    def __init__(self, a_f, an_arg2):
-        self.f = a_f
-        self.arg2 = an_arg2
-
-    def __call__(self, x):
-        return self.f(x, self.arg2)
+#class Bind2nd(FuncOps):
+#    def __init__(self, a_f, an_arg2):
+#        self.f = a_f
+#        self.arg2 = an_arg2
+#
+#    def __call__(self, x):
+#        return self.f(x, self.arg2)
 
 # compose binary function with two unary functions (=> unary fcn)
 # i.e. given a(x,y), b(x), c(x), : d(x) = a(b(x),c(x))
@@ -310,8 +310,8 @@ class BinBinCompose(BinFuncOps):
 
 def array_map(f, ar):
     "Apply an ordinary function to all values in an array."
-    flat_ar = ravel(ar)
-    out = zeros(len(flat_ar), flat_ar.dtype.char)
+    flat_ar = np.ravel(ar)
+    out = np.zeros(len(flat_ar), flat_ar.dtype.char)
     for i in range(len(flat_ar)):
         out[i] = f(flat_ar[i])
     out.shape = ar.shape
@@ -321,9 +321,9 @@ def array_map(f, ar):
 def array_map_2(f, a, b):
     if a.shape != b.shape:
         raise ShapeError
-    flat_a = ravel(a)
-    flat_b = ravel(b)
-    out = zeros(len(flat_a), a.dtype.char)
+    flat_a = np.ravel(a)
+    flat_b = np.ravel(b)
+    out = np.zeros(len(flat_a), a.dtype.char)
     for i in range(len(flat_a)):
         out[i] = f(flat_a[i], flat_b[i])
-    return reshape(out, a.shape)
+    return np.reshape(out, a.shape)

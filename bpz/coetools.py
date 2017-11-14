@@ -1,21 +1,15 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-
-# Automatically adapted for numpy Jun 08, 2006 by
-
-# PYTHON TOOLS
-# Dan Coe
-
 import os
 import sys
-
 import numpy as np
 sys.float_output_precision = 5  # PRINTING ARRAYS: # OF DECIMALS
 numerix = os.environ.get('NUMERIX', '')
 
 pwd = os.getcwd
 die = sys.exit
+home = os.environ.get('HOME', '')
 
 
 def color1to255(color):
@@ -34,9 +28,6 @@ def color2hex(color):
             h = '0' + h
         colorhex += h
     return colorhex
-
-
-home = os.environ.get('HOME', '')
 
 
 def singlevalue(x):
