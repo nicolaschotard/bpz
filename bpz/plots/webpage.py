@@ -49,6 +49,7 @@ from bpz.coetools import *
 from bpz import coeio
 import sedplotAB
 import probplot
+import string
 
 #dir = join(home, 'ACS/color/production/CL0024')
 #file = join(dir, 'CL0024.png')

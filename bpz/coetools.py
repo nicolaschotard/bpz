@@ -7,22 +7,11 @@ from __future__ import absolute_import
 # PYTHON TOOLS
 # Dan Coe
 
-from builtins import input
-from builtins import hex
-from builtins import map
-from builtins import zip
-from builtins import range
-from past.utils import old_div
 import os
 import sys
 
 import numpy as np
 sys.float_output_precision = 5  # PRINTING ARRAYS: # OF DECIMALS
-import types  # TO TELL WHAT TYPE A VARIABLE IS
-import time
-from . import MLab_coe # median, std, mean
-import string  # LOAD THIS AFTER numpy, BECAUSE numpy HAS ITS OWN string
-
 numerix = os.environ.get('NUMERIX', '')
 
 pwd = os.getcwd
@@ -32,11 +21,6 @@ die = sys.exit
 def color1to255(color):
     # CONVERT TO 0-255 SCALE
     return tuple((np.array(color) * 255. + 0.49).astype(int).tolist())
-
-
-def color255to1(color):
-    # CONVERT TO 0-255 SCALE
-    return tuple((old_div(np.array(color), 255.)).tolist())
 
 
 def color2hex(color):
@@ -51,55 +35,6 @@ def color2hex(color):
         colorhex += h
     return colorhex
 
-def keyvals(k, keys, vals):
-    """GIVEN {keys: vals}, RETURNS VALUES FOR k
-    THERE MUST BE A BUILT-IN WAY OF DOING THIS!"""
-    d = dict(list(zip(keys, vals)))
-    d[0] = 0
-
-    def f(x): return d[x]
-    v = list(map(f, ravel(k)))
-    if type(k) == type(np.array([])):
-        v = np.array(v)
-        v.shape = k.shape
-    return v
-
-
-def printmult(x, n):
-    if not (x % n):
-        print(x)
-
-
-def cd(dir):
-    if len(dir) > 2:
-        if dir[0:2] == '~/':
-            dir = os.path.join(home, dir[2:])
-    os.chdir(dir)
-
-
-def cdmk(dir):
-    if not os.path.exists(dir):
-        os.mkdir(dir)
-    os.chdir(dir)
-
-
-def splitparagraphs(txt):
-    paragraphs = ['']
-    for line in txt:
-        line = line.strip()
-        if not line:
-            line = '\n'
-        if line[-1] != '\n':
-            line += '\n'
-        if line == '\n':
-            paragraphs.append('')
-        else:
-            # paragraphs[-1].append(line)
-            paragraphs[-1] += line
-    if paragraphs[-1] == '':
-        paragraphs = paragraphs[:-1]
-    return paragraphs
-
 
 home = os.environ.get('HOME', '')
 
@@ -109,51 +44,6 @@ def singlevalue(x):
     # return type(x) in [float, int]  THERE ARE MORE TYPECODES IN Numpy
     # THERE ARE MORE TYPECODES IN Numpy
     return not isinstance(x, (list, np.ndarray))
-
-def comma(x, ndec=0):
-    if ndec:
-        format = '%%.%df' % ndec
-        s = format % x
-        si, sf = s.split('.')
-        sf = '.' + sf
-    else:
-        s = '%d' % x
-        si = s
-        sf = ''
-    ss = ''
-    while len(si) > 3:
-        ss = ',' + si[-3:] + ss
-        si = si[:-3]
-    ss = si + ss + sf
-    return ss
-
-# print comma(9812345.67)
-
-
-def th(n):
-    """RETURNS 0th, 1st, 2nd, 3rd, 4th, 5th, etc."""
-    if n == 1:
-        return '1st'
-    elif n == 2:
-        return '2nd'
-    elif n == 3:
-        return '3rd'
-    else:
-        return '%dth' % n
-
-
-nth = th
-
-
-def num2str(x, max=3):
-    try:
-        n = ndec(x, max)
-        if n:
-            return "%%.%df" % n % x
-        else:
-            return "%d" % x
-    except:
-        return x
 
 
 def str2num(strg, rf=0):
@@ -203,15 +93,6 @@ def FltArr(n0, n1):
     return(a[:])
 
 
-def IndArr(n0, n1):
-    """MAKES A 2-D INTEGER ARRAY WITH INCREASING INDEX"""
-    a = np.arange(n0 * n1)
-    return np.resize(a, [n0, n1])
-
-#################################
-# STRINGS, INPUT
-
-
 def striskey(str):
     """IS str AN OPTION LIKE -C or -ker
     (IT'S NOT IF IT'S -2 or -.9)"""
@@ -227,29 +108,6 @@ def striskey(str):
 
 def pause(text=''):
     inp = input(text)
-
-
-def wait(seconds):
-    t0 = time()
-    t1 = time()
-    while (t1 - t0) < seconds:
-        t1 = time()
-
-
-def inputnum(question=''):
-    done = 0
-    while not done:
-        rinp = input(question)
-        try:
-            x = float(rinp)
-            done = 1
-        except:
-            pass
-    try:
-        x = int(rinp)
-    except:
-        pass
-    return x
 
 
 def stringsplitatoi(strg, separator=''):
@@ -274,58 +132,12 @@ def stringsplitatof(str, separator=''):
     return vals
 
 
-def stringsplitstrip(strg, separator=''):
-    # SPLITS BUT ALSO STRIPS EACH ITEM OF WHITESPACE
-    if separator:
-        words = strg.split(separator)
-    else:
-        words = strg.split()
-    vals = []
-    for word in words:
-        vals.append(word.strip())
-    return vals
-
-
 def strbegin(str, phr):
     return str[:len(phr)] == phr
 
 
 def strend(str, phr):
     return str[-len(phr):] == phr
-
-
-def strfindall(str, phr):
-    """FIND ALL INSTANCES OF phr IN str
-    RETURN LIST OF POSITIONS WHERE phr IS FOUND
-    (OR RETURN [] IF NOT FOUND)"""
-    pos = []
-    start = -1
-    while 1:
-        start = str.find(phr, start + 1)
-        if start > -1:
-            pos.append(start)
-        else:
-            break
-    return pos
-
-
-def strbtw1(s, left, right=None):
-    """RETURNS THE PART OF STRING s BETWEEN left & right
-    EXAMPLE strbtw('det_lab.reg', '_', '.') RETURNS 'lab'
-    EXAMPLE strbtw('det_{a}.reg', '{}') RETURNS 'a'"""
-    out = None
-    if right == None:
-        if len(left) == 1:
-            right = left
-        elif len(left) == 2:
-            left, right = left
-    i1 = s.find(left)
-    if (i1 > -1):
-        i1 += len(left) - 1
-        i2 = s.find(right, i1 + 1)
-        if (i2 > i1):
-            out = s[i1 + 1:i2]
-    return out
 
 
 def strbtw(s, left, right=None, r=False):
@@ -364,31 +176,7 @@ def getanswer(question=''):
 
 
 ask = getanswer
-
-#################################
-# LISTS
-
-
-def putids(selfvalues, selfids, ids, values):
-    """ selfvalues = INITIAL ARRAY -OR- A DEFAULT VALUE FOR UNput ELEMENTS """
-    try:
-        n = len(selfvalues)
-    except:
-        n = len(selfids)
-        selfvalues = np.zeros(n, int) + selfvalues
-    indexlist = np.zeros(max(selfids) + 1, int) - 1
-    put(indexlist, np.array(selfids).astype(int), np.arange(len(selfids)))
-    indices = np.take(indexlist, np.array(ids).astype(int))
-    put(selfvalues, indices, values)
-    return selfvalues
-
-
-def takelist(a, ind):
-    l = []
-    for i in ind:
-        l.append(a[i])
-    return l
-
+    
 
 def common(id1, id2):
     # ASSUME NO IDS ARE NEGATIVE
@@ -404,36 +192,6 @@ def common(id1, id2):
     ids = np.compress(inboth, ids)
     return ids
 
-# FROM sparse.py ("sparse3")
-
-
-def census(a, returndict=1):
-    a = sort(ravel(a))
-    if returndict:
-        i = np.arange(min(a), max(a) + 2)
-    else:
-        i = np.arange(max(a) + 2)
-    s = searchsorted(a, i)
-    s = s[1:] - s[:-1]
-    i = i[:-1]
-    if returndict:
-        print(i)
-        print(s)
-        #i, s = np.compress(s, (i, s))
-        i = np.compress(s, i)
-        s = np.compress(s, s)
-        print('is')
-        print(i)
-        print(s)
-        d = {}
-        for ii in range(len(i)):
-            d[i[ii]] = s[ii]
-        return d
-    else:
-        return s
-
-# ALSO CONSIDER: set(all) - set(ids)
-
 
 def invertselection(ids, all):
     if type(all) == int:  # size input
@@ -448,15 +206,6 @@ def invertselection(ids, all):
             if not floatin(val, ids):
                 out.append(val)
         return out
-
-
-def mergeids(id1, id2):
-    # ASSUME NO IDS ARE NEGATIVE
-    id1 = np.array(id1).astype(int)
-    id2 = np.array(id2).astype(int)
-    idc = common(id1, id2)
-    id3 = invertselection(idc, id2)
-    return np.concatenate((id1, id3))
 
 
 def findmatch1(x, xsearch, tol=1e-4):
@@ -544,40 +293,6 @@ def findmatches2(x1, y1, x2, y2):
     dmin = np.take(d, di)
     return i, dmin
 
-
-def xref(data, ids, idcol=0, notfoundval=None):
-    """CROSS-REFERENCES 2 DATA COLUMNS
-    data MAY EITHER BE A 2-COLUMN ARRAY, OR A FILENAME CONTAINING THAT DATA
-    ids ARE THE KEYS -- THE VALUES CORRESPONDING TO THESE (IN data's OTHER COLUMN) ARE RETURNED
-    idcol TELLS WHICH COLUMN THE ids ARE IN (0 OR 1)"""
-    if type(data) == str:
-        data = transpose(loaddata(data))
-    iddata = data[idcol].astype(int)
-    xrefdata = data[not idcol].astype(int)
-
-    dict = {}
-    for i in range(len(iddata)):
-        dict[iddata[i]] = xrefdata[i]
-
-    xrefs = []
-    for id in ids:
-        xrefs.append(dict.get(id, notfoundval))
-
-    return np.array(xrefs)
-
-
-def takeid(data, id):
-    """TAKES data COLUMNS CORRESPONDING TO id.
-    data's ID's ARE IN ITS FIRST ROW"""
-    dataids = data[0].astype(int)
-    id = int(id)
-    outdata = []
-    i = 0
-    while id != dataids[i]:
-        i += 1
-    return data[:, i]
-
-
 def takeids(data, ids, idrow=0, keepzeros=0):
     """TAKES data COLUMNS CORRESPONDING TO ids.
     data's ID's ARE IN idrow, ITS FIRST ROW BY DEFAULT"""
@@ -596,104 +311,3 @@ def takeids(data, ids, idrow=0, keepzeros=0):
         elif keepzeros:
             outdata.append(0. * data[:, 0])
     return np.transpose(np.array(outdata))
-
-
-#################################
-# FLUX, BPZ
-
-bpzpath = os.environ.get('BPZPATH', '')
-
-
-def bpzsedname(tb, seds, interp=2):
-    if type(seds) == str:
-        seds = loadfile(bpzpath + '/SED/' + seds)
-    rb = roundint(tb)
-    name = seds[rb - 1]
-    if abs(rb - tb) > 0.1:
-        rb2 = roundint((tb - rb) * 3 + rb)
-        name = name[:-4] + '-' + seds[rb2 - 1]
-    return name
-
-
-def bpztypename(tb, tbs, interp=2):
-    rb = roundint(tb)
-    name = tbs[rb - 1]
-    if abs(rb - tb) > 0.1:
-        rb2 = roundint((tb - rb) * 3 + rb)
-        name += '-' + tbs[rb2 - 1]
-    return name
-
-
-def addmags(m1, m2, dm1=0, dm2=0):
-    # F = 10 ** (-0.4 * m)
-    # dF = -0.4 * ln(10) * 10 ** (-0.4 * m) * dm = -0.921034 * F * dm
-    # somehow this is wrong, should be:
-    # dF / F = 10 ** (0.4 * dm) - 1  (as in bpz_tools.e_frac2mag)
-    if (m1 >= 99 and m2 >= 99) or (dm1 >= 99 and dm2 >= 99):
-        m = 99
-        dm = 99
-    elif m1 >= 99 or dm1 >= 99:
-        m = m2
-        dm = dm2
-    elif m2 >= 99 or dm2 >= 99:
-        m = m1
-        dm = dm1
-    else:  # NORMAL SITUATION
-        F1 = 10 ** (-0.4 * m1)
-        F2 = 10 ** (-0.4 * m2)
-        F = F1 + F2
-        m = -2.5 * log10(F)
-        #dF1 = 0.921034 * F1 * dm1
-        #dF2 = 0.921034 * F2 * dm2
-        #dF = np.sqrt(dF1 ** 2 + dF2 ** 2)
-        #dm = dF / F / 0.921034
-        dm = old_div(np.sqrt((F1 * dm1) ** 2 + (F2 * dm2) ** 2), F)
-    output = (m, dm)
-
-    return output
-
-
-def addfluxes(F1, F2, dF1=0, dF2=0):
-    F = F1 + F2
-    dF = np.sqrt(dF1 ** 2 + dF2 ** 2)
-    output = (F, dF)
-
-    return output
-
-
-#################################
-# FROM Txitxo's bpz_tools.py
-
-def sex2bpzmags(f, ef, zp=0., sn_min=1.):
-    """
-    This function converts a pair of flux, error flux measurements from SExtractor
-    into a pair of magnitude, magnitude error which conform to BPZ input standards:
-    - Nondetections are characterized as mag=99, errormag=+m_1sigma
-      - corrected error in previous version: was errormag=-m_1sigma
-    - Objects with absurd flux/flux error combinations or very large errors are
-      characterized as mag=-99 errormag=0.
-    """
-
-    # Flux <=0, meaningful phot. error
-    nondetected = np.less_equal(f, 0.) * greater(ef, 0)
-    nonobserved = np.less_equal(ef, 0.)  # Negative errors
-    # Clip the flux values to avoid overflows
-    f = np.clip(f, 1e-100, 1e10)
-    ef = np.clip(ef, 1e-100, 1e10)
-    nonobserved += np.equal(ef, 1e10)
-    # Less than sn_min sigma detections: consider non-detections
-    nondetected += np.less_equal(old_div(f, ef), sn_min)
-
-    detected = np.logical_not(nondetected + nonobserved)
-
-    m = np.zeros(len(f), float)
-    em = np.zeros(len(ef), float)
-
-    m = np.where(detected, -2.5 * log10(f) + zp, m)
-    m = np.where(nondetected, 99., m)
-    m = np.where(nonobserved, -99., m)
-
-    em = np.where(detected, 2.5 * log10(1. + old_div(ef, f)), em)
-    em = np.where(nondetected, zp - 2.5 * log10(ef), em)
-    em = np.where(nonobserved, 0., em)
-    return m, em

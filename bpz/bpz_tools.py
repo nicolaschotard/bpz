@@ -64,13 +64,6 @@ def flux(xsr, ys, yr, ccd='yes', units='nu'):
         return f_l
 
 
-def ABtofl(ABmag, filter, ccd='yes'):
-    """Converts AB magnitudes to flux in ergs s^-1 cm^-2 AA^-1"""
-    lp = pivotal_wl(filter, ccd)
-    f = AB2Jy(ABmag)
-    return f / lp**2 * clight_AHz * 1e23
-
-
 def pivotal_wl(filter, ccd='yes'):
     xr, yr = get_filter(filter)
     if ccd == 'yes':
@@ -91,18 +84,6 @@ def filter_center(filter, ccd='yes'):
     return old_div(trapz(yr * xr, xr), trapz(yr, xr))
 
 
-def filter_fwhm(filter, ccd='yes'):
-    xr, yr = get_filter(filter)
-    if ccd == 'yes':
-        yr = yr * xr / mean(xr)
-    imax = argmax(yr)
-    ymax = yr[imax]
-    xmax = xr[imax]
-    ih_1 = argmin(abs(yr[:imax] - old_div(ymax, 2.)))
-    ih_2 = argmin(abs(yr[imax:] - old_div(ymax, 2.))) + imax
-    return xr[ih_2] - xr[ih_1]
-
-
 def AB(flux):
     """AB magnitude from f_nu"""
     return -2.5 * np.log10(flux) - 48.60
@@ -111,11 +92,6 @@ def AB(flux):
 def flux2mag(flux):
     """Convert arbitrary flux to magnitude"""
     return -2.5 * np.log10(flux)
-
-
-def Jy2AB(flux):
-    """Convert flux in Jy to AB magnitudes"""
-    return -2.5 * np.log10(flux * 1e-23) - 48.60
 
 
 def AB2Jy(ABmag):
@@ -138,24 +114,8 @@ def e_mag2frac(errmag):
     return 10.**(.4 * errmag) - 1.
 
 
-def flux_det(aperture, pixelnoise, s2noise=1):
-    """Given an aperture, the noise per pixel and the 
-       signal to noise, it estimates the detection flux limit"""
-    npixels = pi * (old_div(aperture, 2.))**2
-    totalnoise = sqrt(npixels) * pixelnoise
-    return s2noise * totalnoise
-
-
-def get_limitingmagnitude(m, dm, sigma=1., dm_int=0.2):
-    """Given a list of magnitudes and magnitude errors,
-    calculate by extrapolation the 1-sigma error limit"""
-    g = less(m, 99.) * greater(m, -99.)
-    x, y = autobin_stats(compress(g, m), compress(g, dm),
-                         n_points=11, stat="median")
-    return match_resol(y, x, dm_int) - flux2mag(1. / sigma / e_mag2frac(dm_int))
-
-
 # Synthetic photometry functions
+
 
 def etau_madau(wl, z):
     """
@@ -349,61 +309,6 @@ def redshift(wl, flux, z):
         return where(less(f, 0.), 0., f)
 
 
-def normalize(x_sed, y_sed, m, filter='F814W_WFPC2', units='nu'):
-    """Normalizes a spectrum (defined on lambda) to 
-    a broad band (AB) magnitude and transforms the 
-    spectrum to nu units""
-    Usage:
-    normflux=normalize(wl,spectrum,m,filter='F814W_WFPC2')
-    """
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    filter = fil_dir + filter
-    x_res, y_res = get_data(filter, list(range(2)))
-    nres = len(x_res)
-    nsed = len(x_sed)
-    i1 = searchsorted(x_sed, x_res[0]) - 1
-    i1 = maximum(i1, 0)
-    i2 = searchsorted(x_sed, x_res[nres - 1]) + 1
-    i2 = minimum(i2, nsed - 1)
-    r = match_resol(x_res, y_res, x_sed[i1:i2])
-    r = where(less(r, 0.), 0., r)  # Transmission must be >=0
-    flujo = flux(x_sed[i1:i2], y_sed[i1:i2], r, ccd='yes', units='nu')
-    norm = old_div(flujo, mag2flux(m))
-    if units == 'nu':
-        return y_sed * x_sed * x_sed / clight_AHz / norm
-    else:
-        return old_div(y_sed, norm)
-
-
-class Normalize(object):
-    def __init__(self, x_sed, y_sed, m, filter='F814W_WFPC2', units='nu'):
-        """Normalizes a spectrum (defined on lambda) to 
-        a broad band (AB) magnitude and transforms the 
-        spectrum to nu units""
-        Usage:
-        normflux=normalize(wl,spectrum,m,filter='F814W_WFPC2')
-        """
-        if filter[-4:] != '.res':
-            filter = filter + '.res'
-        filter = fil_dir + filter
-        x_res, y_res = get_data(filter, list(range(2)))
-        nres = len(x_res)
-        nsed = len(x_sed)
-        i1 = searchsorted(x_sed, x_res[0]) - 1
-        i1 = maximum(i1, 0)
-        i2 = searchsorted(x_sed, x_res[nres - 1]) + 1
-        i2 = minimum(i2, nsed - 1)
-        r = match_resol(x_res, y_res, x_sed[i1:i2])
-        r = where(less(r, 0.), 0., r)  # Transmission must be >=0
-        flujo = flux(x_sed[i1:i2], y_sed[i1:i2], r, ccd='yes', units='nu')
-        self.norm = old_div(flujo, mag2flux(m))
-        if units == 'nu':
-            self.flux_norm = y_sed * x_sed * x_sed / clight_AHz / self.norm
-        else:
-            self.flux_norm = old_div(y_sed, self.norm)
-
-
 def obs_spectrum(sed, z, madau=1):
     """Generate a redshifted and madau extincted spectrum"""
     # Figure out the correct names
@@ -419,65 +324,7 @@ def obs_spectrum(sed, z, madau=1):
     return x_sed, ys_z
 
 
-def nf_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
-    """Returns array f with f_lambda(z) or f_nu(z) through a given filter 
-       Takes into account intergalactic extinction. 
-       Flux normalization at each redshift is arbitrary 
-    """
-    if type(z) == type(0.):
-        z = array([z])
-
-    # Figure out the correct names
-    if sed[-4:] != '.sed':
-        sed = sed + '.sed'
-    sed = sed_dir + sed
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    filter = fil_dir + filter
-
-    # Get the data
-    x_sed, y_sed = get_data(sed, list(range(2)))
-    nsed = len(x_sed)
-    x_res, y_res = get_data(filter, list(range(2)))
-    nres = len(x_res)
-
-    # Wavelenght range of interest as a function of z
-    wl_1 = old_div(x_res[0], (1. + z))
-    wl_2 = old_div(x_res[-1], (1. + z))
-    n1 = clip(searchsorted(x_sed, wl_1) - 1, 0, 1000000)
-    n2 = clip(searchsorted(x_sed, wl_2) + 1, 0, nsed - 1)
-
-    # Change resolution of filter
-    x_r = x_sed[n1[0]:n2[0]]
-    r = match_resol(x_res, y_res, x_r)
-    r = where(less(r, 0.), 0., r)  # Transmission must be >=0
-
-    # Operations necessary for normalization and ccd effects
-    if ccd == 'yes':
-        r = r * x_r
-    norm_r = trapz(r, x_r)
-    if units == 'nu':
-        const = norm_r / trapz(r / x_r / x_r, x_r) / clight_AHz
-    else:
-        const = 1.
-    const = old_div(const, norm_r)
-
-    nz = len(z)
-    f = zeros(nz) * 1.
-    for i in range(nz):
-        i1, i2 = n1[i], n2[i]
-        ys_z = match_resol(x_sed[i1:i2], y_sed[i1:i2],
-                           old_div(x_r, (1. + z[i])))
-        if madau != 'no':
-            ys_z = etau_madau(x_r, z[i]) * ys_z
-        f[i] = trapz(ys_z * r, x_r) * const
-    if nz == 1:
-        return f[0]
-    else:
-        return f
-
-
-def lf_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
+def f_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
     """
     Returns array f with f_lambda(z) or f_nu(z) through a given filter 
     Takes into account intergalactic extinction. 
@@ -518,7 +365,6 @@ def lf_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes')
     if x_sed[-1] < x_res[-1]:  # The SED does not cover the whole filter interval
         print('Extrapolating the spectrum')
         # Linear extrapolation of the flux using the last 4 points
-        # slope=mean(y_sed[-4:]/x_sed[-4:])
         d_extrap = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
         x_extrap = arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
         extrap = lsq(x_sed[-5:], y_sed[-5:])
@@ -526,8 +372,6 @@ def lf_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes')
         y_extrap = clip(y_extrap, 0., max(y_sed[-5:]))
         x_sed = concatenate((x_sed, x_extrap))
         y_sed = concatenate((y_sed, y_extrap))
-        # connect(x_sed,y_sed)
-        # connect(x_res,y_res)
 
     # Wavelenght range of interest as a function of z
     wl_1 = old_div(x_res[0], (1. + z))
@@ -572,90 +416,6 @@ def lf_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes')
         return f[0]
     else:
         return f
-
-
-def of_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
-    """Returns array f with f_lambda(z) or f_nu(z) through a given filter 
-       Takes into account intergalactic extinction. 
-       Flux normalization at each redshift is arbitrary 
-    """
-    if type(z) == type(0.):
-        z = array([z])
-
-    # Figure out the correct names
-    if sed[-4:] != '.sed':
-        sed = sed + '.sed'
-    sed = sed_dir + sed
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    filter = fil_dir + filter
-
-    # Get the data
-    x_sed, y_sed = get_data(sed, list(range(2)))
-    nsed = len(x_sed)
-    x_res, y_res = get_data(filter, list(range(2)))
-    nres = len(x_res)
-
-    # Define the limits of interest in wl
-    i1 = searchsorted(x_sed, x_res[0]) - 1
-    i1 = maximum(i1, 0)
-    i2 = searchsorted(x_sed, x_res[-1]) + 1
-    i2 = minimum(i2, nsed - 1)
-    if x_sed[-1] < x_res[-1]:  # The SED does not cover the whole filter interval
-        # Linear extrapolation of the flux using the last 4 points
-        # slope=mean(y_sed[-4:]/x_sed[-4:])
-        d_extrap = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
-        x_extrap = arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
-        extrap = lsq(x_sed[-5:], y_sed[-5:])
-        y_extrap = extrap.fit(x_extrap)
-        y_extrap = clip(y_extrap, 0., max(y_sed[-5:]))
-        x_sed = concatenate((x_sed, x_extrap))
-        y_sed = concatenate((y_sed, y_extrap))
-        i2 = len(y_sed) - 1
-    r = match_resol(x_res, y_res, x_sed[i1:i2])
-    r = where(less(r, 0.), 0., r)  # Transmission must be >=0
-    nz = len(z)
-    f = zeros(nz) * 1.
-    for i in range(nz):
-        ys_z = match_resol(x_sed, y_sed, old_div(x_sed, (1. + z[i])))
-        if madau != 'no':
-            ys_z[i1:i2] = etau_madau(x_sed[i1:i2], z[i]) * ys_z[i1:i2]
-        f[i] = flux(x_sed[i1:i2], ys_z[i1:i2], r, ccd, units)
-    if nz == 1:
-        return f[0]
-    else:
-        return f
-
-
-f_z_sed = lf_z_sed
-
-
-def f_z_sed_AB(sed, filter, z=array([0.]), units='lambda'):
-    # It assumes ccd=yes,madau=yes by default
-    # zmax_ab and dz_ab are def. in bpz_tools
-    z_ab = arange(0., zmax_ab, dz_ab)
-    lp = pivotal_wl(filter)
-
-    # AB filter
-
-    # Figure out the correct names
-    if sed[-4:] != '.sed':
-        sed = sed + '.sed'
-    ab_file = ab_dir + sed[:-4] + '.'
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    ab_file += filter[:-4] + '.AB'
-    # print 'AB file',ab_file
-    if not os.path.exists(ab_file):
-        ABflux(sed, filter)
-    z_ab, f_ab = get_data(ab_file, list(range(2)))
-    fnu = match_resol(z_ab, f_ab, z)
-    if units == 'nu':
-        return fnu
-    elif units == 'lambda':
-        return fnu / lp**2 * clight_AHz
-    else:
-        print('Units not valid')
 
 
 def ABflux(sed, filter, madau='yes'):
@@ -705,7 +465,6 @@ def ABflux(sed, filter, madau='yes'):
     if x_sed[-1] < x_res[-1]:  # The SED does not cover the whole filter interval
         print('Extrapolating the spectrum')
         # Linear extrapolation of the flux using the last 4 points
-        # slope=mean(y_sed[-4:]/x_sed[-4:])
         d_extrap = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
         x_extrap = arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
         extrap = lsq(x_sed[-5:], y_sed[-5:])
@@ -713,14 +472,10 @@ def ABflux(sed, filter, madau='yes'):
         y_extrap = clip(y_extrap, 0., max(y_sed[-5:]))
         x_sed = concatenate((x_sed, x_extrap))
         y_sed = concatenate((y_sed, y_extrap))
-        # connect(x_sed,y_sed)
-        # connect(x_res,y_res)
 
     # Wavelenght range of interest as a function of z_ab
     wl_1 = old_div(x_res[0], (1. + z_ab))
     wl_2 = old_div(x_res[-1], (1. + z_ab))
-    # print 'wl', wl_1, wl_2
-    # print 'x_res', x_res
     print('x_res[0]', x_res[0])
     print('x_res[-1]', x_res[-1])
     n1 = clip(searchsorted(x_sed, wl_1) - 1, 0, 100000)
@@ -791,10 +546,6 @@ def ABflux(sed, filter, madau='yes'):
     ABoutput = ab_dir + \
         split(sed, '/')[-1][:-4] + '.' + split(filter, '/')[-1][:-4] + '.AB'
 
-    # print "Clipping the AB file"
-    # fmax=max(f)
-    # f=where(less(f,fmax*ab_clip),0.,f)
-
     print('Writing AB file ', ABoutput)
     put_data(ABoutput, (z_ab, f))
 
@@ -843,57 +594,14 @@ def likelihood(f, ef, ft_z):
     return old_div(p, norm)
 
 
-def new_likelihood(f, ef, ft_z):
-    """ 
-    Usage: ps[:nz,:nt]=likelihood(f[:nf],ef[:nf],ft_z[:nz,:nt,:nf])
-    """
-    global minchi2
-    rolex = reloj()
-    rolex.set()
-    nz, nt, nf = ft_z.shape
-
-    foo = add.reduce((old_div(f, ef))**2)
-
-    fgt = add.reduce(
-        # f[NewAxis,NewAxis,:nf]*ft_z[:nz,:nt,:nf]/ef[NewAxis,NewAxis,:nf]**2
-        reshape(f, (1, 1, nf)) * ft_z / reshape(ef, (1, 1, nf))**2, -1)
-
-    ftt = add.reduce(
-        # ft_z[:nz,:nt,:nf]*ft_z[:nz,:nt,:nf]/ef[NewAxis,NewAxis,:nf]**2
-        old_div(ft_z**2, reshape(ef, (1, 1, nf))**2), -1)
-
-    ao = old_div(fgt, ftt)
-#    print mean(ao),std(ao)
-
-    chi2 = foo - old_div(fgt**2, ftt) + (1. - ao)**2 * ftt
-
-    minchi2 = min(min(chi2))
-    chi2 = chi2 - minchi2
-    chi2 = clip(chi2, 0., -2. * eeps)
-    p = exp(old_div(-chi2, 2.))
-    norm = add.reduce(add.reduce(p))
-    return old_div(p, norm)
-
 class p_c_z_t(object):
     def __init__(self, f, ef, ft_z):
         self.nz, self.nt, self.nf = ft_z.shape
         # Get true minimum of the input data (excluding zero values)
-        # maximo=max(f)
-        # minimo=min(where(equal(f,0.),maximo,f))
-        # print 'minimo=',minimo
-        # maximo=max(ft_z)
-        # minimo=min(min(min(where(equal(ft_z,0.),maximo,ft_z))))
-        # print 'minimo=',minimo
-        # minerror=min(f)
-        # maxerror=max(ef)
-        # maxerror=max(where(equal(ef,maxerror),minerror,ef))
-        # print 'maxerror',maxerror
 
         # Define likelihood quantities taking into account non-observed objects
         self.foo = add.reduce(
             where(less(old_div(f, ef), 1e-4), 0., (old_div(f, ef))**2))
-        # nonobs=less(f[NewAxis,NewAxis,:]/ef[NewAxis,NewAxis,:]+ft_z[:,:,:]*0.,1e-4)
-        #nonobs=less(reshape(f, (1, 1, self.nf)) / reshape(ef, (1, 1, self.nf)) + ft_z*0., 1e-4)
         # Above was wrong: non-detections were ignored as non-observed --DC
         nonobs = greater(reshape(ef, (1, 1, self.nf)) + ft_z * 0., 1.0)
         self.fot = add.reduce(
@@ -1147,43 +855,6 @@ def get_datasex(file, cols, purge=1, mag=(2, 99.), emag=(4, .44), flag=(24, 4), 
         return get_data(file, cols)
 
 
-def sex2bpzmags(f, ef, zp=0., sn_min=1., m_lim=None):
-    """
-    This function converts a pair of flux, error flux measurements from SExtractor
-    into a pair of magnitude, magnitude error which conform to BPZ input standards:
-    - Nondetections are characterized as mag=99, errormag=m_1sigma
-    - Objects with absurd flux/flux error combinations or very large errors are
-      characterized as mag=-99 errormag=0.
-    """
-
-    # Flux <=0, meaningful phot. error
-    nondetected = less_equal(f, 0.) * greater(ef, 0)
-    nonobserved = less_equal(ef, 0.)  # Negative errors
-    # Clip the flux values to avoid overflows
-    f = clip(f, 1e-100, 1e10)
-    ef = clip(ef, 1e-100, 1e10)
-    nonobserved += equal(ef, 1e10)
-    # Less than sn_min sigma detections: consider non-detections
-    nondetected += less_equal(old_div(f, ef), sn_min)
-
-    detected = logical_not(nondetected + nonobserved)
-
-    m = zeros(len(f)) * 1.
-    em = zeros(len(ef)) * 1.
-
-    m = where(detected, -2.5 * np.log10(f) + zp, m)
-    m = where(nondetected, 99., m)
-    m = where(nonobserved, -99., m)
-
-    em = where(detected, 2.5 * np.log10(1. + old_div(ef, f)), em)
-    if not m_lim:
-        em = where(nondetected, -2.5 * np.log10(ef) + zp, em)
-    else:
-        em = where(nondetected, m_lim, em)
-    em = where(nonobserved, 0., em)
-    return m, em
-
-
 class bpz_diagnosis(object):
     def __init__(self, bpz_file='/home/txitxo/bpz/TEST/hdfn.bpz',
                  columns=(1, 4, 5, 6, 9, 10)):
@@ -1236,111 +907,6 @@ class bpz_diagnosis(object):
             if ask("save plot?"):
                 name = input("name?")
                 p.write_eps(name)
-
-
-class bpz_diagnosis_old(object):
-    # This class characterized the quality of a bpz run by comparing
-    # the output with the input spectroscopic redshifts
-
-    def __init__(self, bpz_file='/home/txitxo/bpz/TEST/hdfn.bpz',
-                 columns=(1, 5, 6, 9, 10)):
-        # columns correspond to the positions of the variables z_b,odds,z_ml, z_s and m_0
-        # in the bpz file
-        self.zb, self.odds, self.zm, self.zs, self.mo = get_data(
-            bpz_file, columns)
-#        print self.zb[:10],self.odds[:10],self.zm[:10],self.zs[:10],self.mo[:10]
-
-    def stats(self, odds_thr=(0.95, 0.99), z_lim=(0., 10.)):
-        # z_lim selects in the *estimated* quantities
-        # parameters controlling the 'purging' of outliers
-        d_thr = 3.  # Should remove only 1% of all points
-        n = 5
-        # Produce stats characterizing the quality of the results
-        # rms and fraction of outliers for zm: rms_zm, fo_zm
-        if z_lim[0] != 0. or z_lim[1] != 8.:
-            good_b = greater_equal(
-                self.zb, z_lim[0]) * less_equal(self.zb, z_lim[1])
-            good_m = greater_equal(
-                self.zm, z_lim[0]) * less_equal(self.zm, z_lim[1])
-            good_s = greater_equal(
-                self.zs, z_lim[0]) * less_equal(self.zs, z_lim[1])
-            zb, zsb, oddsb = multicompress(
-                good_b, (self.zb, self.zs, self.odds))
-            zm, zsm = multicompress(good_m, (self.zm, self.zs))
-            nzs = sum(good_s)
-        else:
-            zb = self.zb
-            zm = self.zm
-            zsb = self.zs
-            oddsb = self.odds
-            zsm = zsb
-            nzs = len(self.zs)
-        dzb = old_div((zb - zsb), (1. + zsb))
-        dzm = old_div((zm - zsm), (1. + zsm))
-        nzb = len(dzb)
-        nzm = len(dzm)
-
-        greater_equal(self.zm, z_lim[0]) * less_equal(self.zm, z_lim[1])
-
-        print("Number of galaxies selected using zs=", nzs)
-        print("Number of galaxies selected using zb=", nzb)
-        print("Number of galaxies selected using zm=", nzm)
-
-        # Total Fraction of zb with dz larger than 0.06(1+zs)
-        f_zb_0p06 = old_div(sum(greater(abs(dzb), 3 * 0.06)), float(nzb))
-        print("Fraction of zb with <zb-zs> > 3*0.06(1+z)= %.2f" % f_zb_0p06)
-
-        # Total Fraction of zm with dz larger than 0.06(1+zs)
-        f_zm_0p06 = old_div(sum(greater(abs(dzm), 3 * 0.06)), float(nzm))
-        print("Fraction of zm with <zm-zs> > 3*0.06(1+z)= %.2f" % f_zm_0p06)
-
-        print("\nSelect objects using odds thresholds\n")
-        for i in range(len(odds_thr)):
-            goodo = greater_equal(oddsb, odds_thr[i])
-            print("# of objects with odds > %.2f = %.2f " %
-                  (odds_thr[i], sum(goodo)))
-            zbo, zso = multicompress(goodo, (zb, zsb))
-            dzbo = old_div((zbo - zso), (1. + zso))
-            zbo_stat = stat_robust(dzbo, d_thr, n)
-            zbo_stat.run()
-            mean_zbo, rms_zbo, n_out_zbo, frac_zbo =\
-                zbo_stat.mean, zbo_stat.rms, zbo_stat.n_outliers, zbo_stat.fraction
-            print("     Z_BO vs Z_S")
-            print("     <z_bo-z_s>=%.4f, rms=%.4f, n_outliers=%i, fraction outliers=%.2f" %
-                  (mean_zbo, rms_zbo, n_out_zbo, frac_zbo))
-
-            # Total Fraction of zb with dz larger than 0.06(1+zs)
-            f_zbo_0p06 = old_div(
-                sum(greater(abs(dzbo), 3 * 0.06)), float(len(dzbo)))
-            print("Fraction of zbo with <zbo-zso> > 3*0.06(1+z)= %.2f" %
-                  f_zbo_0p06)
-
-            # Plot
-            p = FramedPlot()
-            p.add(Points(zbo, zso, type='circle'))
-            p.xlabel = r"$z_s$"
-            p.ylabel = r"$z_b$"
-            p.add(Slope(1., type='dotted'))
-            p.show()
-            p.write_eps('plot_' + str(odds_thr[i]) + '.eps')
-
-            # Otroplot
-            p = FramedPlot()
-            xz = arange(-1., 1., 0.05)
-            hd = hist(dzbo, xz)
-            p.add(Histogram(hd, xz[0], 0.05))
-            p.show()
-
-            # Completeness fractions as a function of redshift
-            # Odds fractions as a function of magnitude
-
-    def plots(self):
-        pass
-        # Produce main plots
-
-    def webpage(self):
-        pass
-        # Produce a webpage with a summary of the numeric estimates and plots
 
 
 def test():
@@ -1507,5 +1073,3 @@ def test():
 
 if __name__ == '__main__':
     test()
-
-
