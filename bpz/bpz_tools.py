@@ -8,12 +8,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-#from Numeric import *
-from builtins import map
-from builtins import str
-from builtins import input
-from builtins import range
-from builtins import object
 from past.utils import old_div
 from numpy import *
 from .MLab_coe import *
@@ -39,7 +33,6 @@ eeps = log(eps)
 
 # This quantities are used by the AB files
 zmax_ab = 12.
-# zmax_ab=4.
 dz_ab = 0.01
 ab_clip = 1e-6
 
@@ -572,11 +565,8 @@ def lf_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes')
         i1, i2 = n1[i], n2[i]
         ys_z = match_resol(x_sed[i1:i2], y_sed[i1:i2],
                            old_div(x_r, (1. + z[i])))
-        # p=FramedPlot();p.add(Curve(x_r,ys_z));p.show()
         if madau != 'no':
             ys_z = etau_madau(x_r, z[i]) * ys_z
-        # pp=FramedPlot();pp.add(Curve(x_r,ys_z*etau_madau(x_r,z[i])));pp.show()
-        # ask('More?')
         f[i] = trapz(ys_z * r, x_r) * const
     if nz == 1:
         return f[0]
@@ -638,8 +628,6 @@ def of_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes')
 
 
 f_z_sed = lf_z_sed
-# f_z_sed=nf_z_sed
-# f_z_sed=of_z_sed
 
 
 def f_z_sed_AB(sed, filter, z=array([0.]), units='lambda'):
@@ -886,42 +874,6 @@ def new_likelihood(f, ef, ft_z):
     norm = add.reduce(add.reduce(p))
     return old_div(p, norm)
 
-# class p_c_z_t:
-#    def __init__(self,f,ef,ft_z):
-#	self.nz,self.nt,self.nf=ft_z.shape
-#	self.foo=add.reduce((f/ef)**2)
-#	self.fgt=add.reduce(
-#	    f[NewAxis,NewAxis,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2
-#	    ,-1)
-#	self.ftt=add.reduce(
-#	    ft_z[:,:,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2
-#	    ,-1)
-#        #When all the model fluxes are equal to zero
-#        self.chi2=self.foo-(self.fgt**2+1e-100)/(self.ftt+1e-100)
-#	self.chi2_minima=loc2d(self.chi2[:self.nz,:self.nt],'min')
-#	self.i_z_ml=self.chi2_minima[0]
-#	self.i_t_ml=self.chi2_minima[1]
-#	self.min_chi2=self.chi2[self.i_z_ml,self.i_t_ml]
-#	self.likelihood=exp(-0.5*clip((self.chi2-self.min_chi2),0.,1400.))
-#        self.likelihood=where(equal(self.chi2,1400.),0.,self.likelihood)
-#        #Add the f_tt^-1/2 multiplicative factor in the exponential
-#        self.chi2+=-0.5*log(self.ftt+1e-100)
-#        min_chi2=min(min(self.chi2))
-#	self.Bayes_likelihood=exp(-0.5*clip((self.chi2-min_chi2),0.,1400.))
-#        self.Bayes_likelihood=where(equal(self.chi2,1400.),0.,self.Bayes_likelihood)
-#
-#        #plo=FramedPlot()
-#        #for i in range(self.ftt.shape[1]):
-#        #    norm=sqrt(max(self.ftt[:,i]))
-#        #    # plo.add(Curve(arange(self.ftt.shape[0]),self.ftt[:,i]**(0.5)))
-#        #    plo.add(Curve(arange(self.ftt.shape[0]),self.likelihood[:,i],color='red'))
-#        #    plo.add(Curve(arange(self.ftt.shape[0]),self.likelihood[:,i]*sqrt(self.ftt[:,i])/norm))
-#        #plo.show()#
-#
-#    def bayes_likelihood(self):
-#        return self.Bayes_likelihood
-
-
 class p_c_z_t(object):
     def __init__(self, f, ef, ft_z):
         self.nz, self.nt, self.nf = ft_z.shape
@@ -950,18 +902,6 @@ class p_c_z_t(object):
         self.ftt = add.reduce(
             # where(nonobs,0.,ft_z[:,:,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2)
             where(nonobs, 0., old_div(ft_z**2, reshape(ef, (1, 1, self.nf))**2)), -1)
-
-        #############################################
-        # Old definitions
-        #############################################
-        # self.foo=add.reduce((f/ef)**2)
-        # self.fot=add.reduce(
-        #    f[NewAxis,NewAxis,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2
-        #    ,-1)
-        # self.ftt=add.reduce(
-        #    ft_z[:,:,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2
-        #    ,-1)
-        ################################################
 
         # Define chi2 adding eps to the ftt denominator to avoid overflows
         self.chi2 = where(equal(self.ftt, 0.),
@@ -1007,26 +947,6 @@ class p_c_z_t(object):
         plo.add(Curve(arange(self.nz), bl, color='blue'))
         plo.add(Curve(arange(self.nz), l, color='red'))
         plo.show()
-
-        # plo2=FramedPlot()
-        # for i in range(self.ftt.shape[1]):
-        # for i in range(2):
-        #    #plo2.add(Curve(arange(self.nz),log(self.fot[:,i]*self.fot[:,i])))
-        #    plo2.add(Curve(arange(self.nz),log(self.ftt[:,i])))
-        # plo2.show()
-
-        # for i in range(self.ftt.shape[1]):
-        # for i in range(2):
-        #    plo2.add(Curve(arange(self.nz),-0.5*(self.fot[:,i]*self.fot[:,i]/self.ftt[:,i]+log(self.ftt[:,i]))))
-        #    plo2.add(Curve(arange(self.nz),-0.5*(self.fot[:,i]*self.fot[:,i]/self.ftt[:,i]),color='red'))
-        # plo2.show()
-
-        # plo3=FramedPlot()
-        # for i in range(self.ftt.shape[1]):
-        #    norm=sqrt(max(self.ftt[:,i]))
-        #    plo3.add(Curve(arange(self.nz),self.fot[:,i]*self.fot[:,i]/self.ftt[:,i]))
-        # plo3.show()
-
         ask('More?')
 
 
@@ -1045,31 +965,6 @@ class p_c_z_t_color(object):
 
     def bayes_likelihood(self):
         return self.likelihood
-
-# def gr_likelihood(f,ef,ft_z):
-#    #Color-redshift Likelihood a la Rychards et al. (SDSS QSOs)
-#    global minchi2
-#    nf=f.shape[0]
-#    nz=ft_z.shape[0]
-#    nt=ft_z.shape[1]
-#    print f,ef,ft_z[:10,0,:]
-#    chi2=add.reduce(
-#	((f[NewAxis,NewAxis,:nf]-ft_z[:nz,:nt,:nf])/ef[NewAxis,NewAxis,:nf])**2
-#	,-1)
-#    minchi2=min(min(chi2))
-#    chi2=chi2-minchi2
-#    chi2=clip(chi2,0.,1400.)
-#    p=exp(-chi2/2.)
-#    norm=add.reduce(add.reduce(p))
-#    return p/norm
-
-# def p_and_minchi2(f,ef,ft_z):
-#    p=gr_likelihood(f,ef,ft_z)
-#    return p,minchi2
-
-# def new_p_and_minchi2(f,ef,ct):
-#    p=color_likelihood(f,ef,ct)
-#    return p,minchi2
 
 
 def prior(z, m, info='hdfn', nt=6, ninterp=0, x=None, y=None):
@@ -1210,11 +1105,6 @@ class p_bayes(object):
         # print self.q90
         return z[imax]
 
-    # def hist_p(self,dz=0.25):
-    #    self.pt=sum(self.p)
-    #    self.xz=arange(self.z[0],self.z[-1]+dz,dz)
-    #    self.hb=bin_stats(self.z,self.pt,self.xz,'sum')
-
 # Misc stuff
 
 
@@ -1320,12 +1210,7 @@ class bpz_diagnosis(object):
         self.n_selected = sum(self.good)
         self.d = compress(self.good, old_div(
             (self.zb - self.zs), (1. + self.zs)))
-        # try: self.std_thr=std_thr(self.d,thr)
-        # except: self.std_thr=1e10
-        # try: self.med_thr=med_thr(self.d,thr)
-        # except: self.med_thr=1
-        # try: self.n_thr=self.n_selected-out_thr(self.d,thr)
-        # except: self.n_thr=0
+
         b = stat_robust(self.d, 3, 5)
         b.run()
         self.n_remaining = b.n_remaining
@@ -1400,32 +1285,6 @@ class bpz_diagnosis_old(object):
         print("Number of galaxies selected using zs=", nzs)
         print("Number of galaxies selected using zb=", nzb)
         print("Number of galaxies selected using zm=", nzm)
-
-        # ZB
-#        zb_stat=stat_robust(dzb,d_thr,n)
-#        zb_stat.run()
-#        mean_zb,rms_zb,n_out_zb,frac_zb=\
-#          zb_stat.mean,zb_stat.rms,zb_stat.n_outliers,zb_stat.fraction
-#        print "Z_B vs Z_S"
-#        print "<z_b-z_s>/(1+zs)=%.4f, rms=%.4f, n_outliers=%i, fraction outliers=%.2f" %\
-#              (mean_zb,rms_zb,n_out_zb,frac_zb)
-
-        # ZM
-#        zm_stat=stat_robust(dzm,d_thr,n)
-#        zm_stat.run()
-#        mean_zm,rms_zm,n_out_zm,frac_zm=\
-#          zm_stat.mean,zm_stat.rms,zm_stat.n_outliers,zm_stat.fraction
-#        print "Z_M vs Z_S"
-#        print "<z_m-z_s>/(1+zs)=%.4f, rms=%.4f, n_outliers=%i, fraction outliers=%.2f" %\
-#              (mean_zm,rms_zm,n_out_zm,frac_zm)
-
-        # Total Fraction of zm with dz larger than rms_zb
-#        f_zm_rms_zb=sum(greater(abs(self.dzm),3*rms_zb))/ float(self.nz)
-#        print "Fraction of zm with |zm-zs|/(1+zs) > 3*rms_dzb= %.2f" % f_zm_rms_zb
-
-        # Total Fraction of zb with dz larger than rms_zm
-#        f_zb_rms_zm=sum(greater(abs(self.dzb),3.*rms_zm))/ float(self.nz)
-#        print "Fraction of zb with |zb-zs|/(1+zs) > 3*rms_dzm= %.2f" % f_zb_rms_zm
 
         # Total Fraction of zb with dz larger than 0.06(1+zs)
         f_zb_0p06 = old_div(sum(greater(abs(dzb), 3 * 0.06)), float(nzb))
@@ -1503,11 +1362,6 @@ def test():
     if abs(1. - old_div(e_ccd, r_ccd)) > 1e-6 or abs(1. - old_div(e_noccd, r_noccd)) > 1e-6:
         raise test
 
-    # print '        f_lambda          '
-    # print 'Results                  Expected'
-    # print 'CCD ',r_ccd,e_ccd
-    # print 'No CCD ',r_noccd,e_noccd
-
     nu = arange(old_div(1., x[-1]), old_div(1., x[0]),
                 1. / x[0] / 1e2) * clight_AHz
     fn = (1. + sin(clight_AHz / 100. / nu)) * clight_AHz / nu / nu
@@ -1517,11 +1371,6 @@ def test():
     e_noccd = old_div(add.reduce(fn * rn), add.reduce(rn))
     r_ccd = flux(x, f, r, ccd='yes', units='nu')
     r_noccd = flux(x, f, r, ccd='no', units='nu')
-
-    # print '           f_nu           '
-    # print 'Results                  Expected'
-    # print 'CCD',r_ccd,e_ccd
-    # print 'no CCD',r_noccd,e_noccd
 
     if abs(1. - old_div(e_ccd, r_ccd)) > 1e-6 or abs(1. - old_div(e_noccd, r_noccd)) > 1e-6:
         raise test
@@ -1658,6 +1507,5 @@ def test():
 
 if __name__ == '__main__':
     test()
-else:
-    pass
-#    print 'bpz_tools loaded as module'
+
+

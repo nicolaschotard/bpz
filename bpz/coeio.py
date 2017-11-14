@@ -575,21 +575,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     collens.append(collen)
 
 
-# if machine:  # machine readable
-##                 mformat = ''
-# for ix in range(nx):
-##                     collen = collens[ix]
-# if colexp[ix]: # EXP
-##                         mformat += 'E5.3'
-# elif coldec[ix]: # FLOAT
-##                         mformat += 'F%d.%d' % (collen, coldec[ix])
-# else: # DECIMAL
-##                         mformat += 'I%d' % collen
-# if ix < nx - 1:
-##                         mformat += separator
-# else:
-##                         mformat += "\n"
-
         if descriptions:
             if type(descriptions) == dict:  # CONVERT DICTIONARY FORM TO LIST
                 dd = []
@@ -619,10 +604,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                         if descriptions[ix]:
                             headline += '  %s' % descriptions[ix]
                     headline += '\n'
-                    # headline += '# %2d %s  %s\n' % (ix+1, label, descriptions[ix])
-                    # ff = '# %%2d %%%ds  %%s\n' % maxcollen  # '# %2d %10s %s\n'
-                    #headline += ff % (ix+1, labels[ix], descriptions[ix])
-                    # headline += '# %2d %s\n' % (ix+1, descriptions[ix])
                 headline += '#\n'
                 headline += '#'
                 colformats = format.split('%')[1:]
@@ -631,7 +612,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 for ix in range(nx):
                     cf = colformats[ix]
                     collen = collens[ix]
-                    # label = labels[ix][:collen]  # TRUNCATE LABEL TO FIT COLUMN DATA
                     label = labels[ix]
                     label = label.center(collen)
                     headline += label + separator
@@ -663,7 +643,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     labels[ix] = '  ' + labels[ix]
                 if len(labels[ix]) > maxlabellen:
                     maxlabellen = len(labels[ix])
-            # labelformat = '%%%ds' % maxlabellen
             if not header:
                 header = []
                 header.append('Title:\n')
@@ -672,7 +651,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
             header.append('=' * 80 + '\n')
             header.append('Byte-by-byte Description of file: %s\n' % filename)
             header.append('-' * 80 + '\n')
-            #header.append('   Bytes Format Units   Label    Explanations\n')
             headline = '   Bytes Format Units   '
             headline += string.ljust('Label', maxlabellen - 2)
             headline += '  Explanations\n'
@@ -951,8 +929,6 @@ class Cat2D_xyflip(object):
         ix = interp(x, self.x, np.arange(len(self.x)))
         iy = interp(y, self.y, np.arange(len(self.y)))
         if not dointerp:  # JUST GET NEAREST
-            #ix = searchsorted(self.x, x)
-            #iy = searchsorted(self.y, y)
             ix = roundint(ix)
             iy = roundint(iy)
             z = self.z[ix, iy]
@@ -981,8 +957,6 @@ class Cat2D(object):
         ix = interp(x, self.x, np.arange(len(self.x)))
         iy = interp(y, self.y, np.arange(len(self.y)))
         if not dointerp:  # JUST GET NEAREST
-            #ix = searchsorted(self.x, x)
-            #iy = searchsorted(self.y, y)
             ix = roundint(ix)
             iy = roundint(iy)
             z = self.z[iy, ix]
@@ -1015,16 +989,13 @@ def savecat2d(data, x, y, filename, dir="", silent=0):
 
 def savecat2d_xyflip(data, x, y, filename, dir="", silent=0):
     """OUTPUT: FILE WITH data IN BODY AND x & y ALONG LEFT AND TOP"""
-    #y = y[NewAxis, :]
     y = np.reshape(y, (1, len(y)))
     data = np.concatenate([y, data])
     x = np.concatenate([[0], x])
-    #x = x[:, NewAxis]
     x = np.reshape(x, (len(x), 1))
     data = np.concatenate([x, data], 1)
     if filename[-1] != '+':
         filename += '+'
-    #savedata(data, filename)
     savedata1(data, filename, dir)
 
 
@@ -1049,7 +1020,6 @@ def loadvars(filename, dir="", silent=0):
     print(labelstr + ' = data')
     # STRING TO BE EXECUTED AFTER EXIT
     return 'from coeio import data,labels,labelstr\n' + labelstr + ' = data'
-    # return 'from coeio import data\n' + labelstr + ' = data'  # STRING TO BE EXECUTED AFTER EXIT
 
 
 class VarsClass(object):
@@ -1071,13 +1041,11 @@ class VarsClass(object):
                     print(self.get(label)[:5])
                 self.updatedata()
             elif machinereadable(filename, dir):
-                #self = loadmachine(filename, dir, silent)
                 self2 = loadmachine(filename, dir, silent)
                 self.labels = self2.labels[:]
                 for label in self.labels:
                     exec('self.%s = self2.%s[:]' % (label, label))
                 self.name = filename
-                # self.header = '' # for now...
             else:
                 if filename[-1] != '+':
                     filename += '+'
@@ -1106,7 +1074,6 @@ class VarsClass(object):
                 print('BAD LABEL NAME:', label)
 
     def copy(self):
-        # return copy.deepcopy(self)
         selfcopy = VarsClass()
         selfcopy.labels = self.labels[:]
         selfcopy.data = self.updateddata()
@@ -1136,19 +1103,13 @@ class VarsClass(object):
         return l
 
     def subset(self, good):
-        #selfcopy = self.copy()
-        # if len(self.id) <> len(good):
-        # print "VarsClass: SUBSET CANNOT BE CREATED: good LENGTH = %d, data LENGTH = %d" % (len(self.id), len(good))
         if self.len() != len(good):
             print("VarsClass: SUBSET CANNOT BE CREATED: good LENGTH = %d, data LENGTH = %d" % (
                 self.len(), len(good)))
         else:
             selfcopy = self.copy()
             data = self.updateddata()
-            # print data.shape
-            # print total(good), '/', len(good)
             selfcopy.data = np.compress(good, data)
-            # print selfcopy.data.shape
             selfcopy.assigndata()
             # PRESERVE UN-UPDATED DATA ARRAY
             selfcopy.data = np.compress(good, self.data)
@@ -1180,7 +1141,6 @@ class VarsClass(object):
         return sub
 
     def put(self, label, indices, values):
-        #exec('put(self.%s, indices, values)' % label)
         exec('x = self.%s.copy()' % label)
         put(x, indices, values)
         exec('self.%s = x' % label)
@@ -1195,9 +1155,6 @@ class VarsClass(object):
             return self.take(np.array([i]))
 
     def putid(self, label, id, value, idlabel='id'):
-        # print "putid UNTESTED!!"  -- STILL TRUE
-        # print "(Hit Enter to continue)"
-        # pause()
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         i = argmin(abs(selfid - id))
         if selfid[i] != id:
@@ -1207,25 +1164,16 @@ class VarsClass(object):
             exec('x = self.%s.copy()' % label)
             put(x, i, value)
             exec('self.%s = x' % label)
-        # print self.takeid(id).get(label)
 
     def takeids(self, ids, idlabel='id'):
-        # selfid = self.id.astype(int) # [6 4 5]
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         indexlist = np.zeros(max(selfid) + 1, int) - 1
         put(indexlist, selfid, np.arange(len(selfid)))  # [- - - - 1 2 0]
-        # self.good = np.greater(selfid, -1)  # TOTALLY WRONG!  USED IN bpzphist
-        # ids = [4 6]  ->  indices = [1 0]
         indices = take(indexlist, np.array(ids).astype(int))
-        # print type(indices[0])
         goodindices = np.compress(np.greater(indices, -1), indices)
         good = np.zeros(self.len(), int)
-        # print 'takeids'
         good = good.astype(int)
         goodindices = goodindices.astype(int)
-        # print type(good[0]) #good.type()
-        # print type(goodindices[0])  #goodindices.type()
-        # pause()
         put(good, goodindices, 1)
         self.good = good
         if -1 in indices:
@@ -1234,15 +1182,9 @@ class VarsClass(object):
         return self.take(indices)
 
     def putids(self, label, ids, values, idlabel='id', rep=True):
-        # print "putids UNTESTED!!"
-        # print "putids not fully tested"
-        # print "(Hit Enter to continue)"
-        # pause()
-        # selfid = self.id.astype(int) # [6 4 5]
         # Given selfid, at ids, place values
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         maxselfid = max(selfid)
-        #idstochange = set(ids)
         exec('x = self.%s.copy()' % label)
         idchecklist = selfid.copy()
         done = False
@@ -1259,33 +1201,17 @@ class VarsClass(object):
             put(x, indices, values)
             put(idchecklist, indices, 0)
             if rep:  # Repeat if necessary
-                #idstochange = set(x) & set(ids)
-                #done = total(idsdone) == self.len()
                 done = total(idchecklist) == 0
                 rep += 1
             else:
-                #idstochange = []
                 done = 1
-            if 0:
-                print(x)  # [:10]
-                print(ids)  # [:10]
-                print(indexlist)  # [:10]
-                # print idsdone[:10]
-                print(idchecklist)  # [:10]
-                print(len(x))
-                print(len(x) - len(np.compress(idchecklist, idchecklist)))
-                # print len(idstochange)
-                pause()
         exec('self.%s = x' % label)
 
     def takecids(self, ids, idlabel='id'):  # only take common ids
-        # selfid = self.id.astype(int) # [6 4 5]
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         n = max((max(selfid), max(ids)))
         indexlist = np.zeros(n + 1, int)
-        #indexlist = np.zeros(max(selfid)+1)
         put(indexlist, selfid, np.arange(len(selfid)) + 1)  # [- - - - 1 2 0]
-        # ids = [4 6]  ->  indices = [1 0]
         indices = take(indexlist, np.array(ids).astype(int))
         indices = np.compress(indices, indices - 1)
         goodindices = np.compress(np.greater(indices, -1), indices)
@@ -1298,8 +1224,6 @@ class VarsClass(object):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         if singlevalue(ids):
             ids = [ids]
-        # newids = set(selfid) - set(ids)  # SCREWS UP ORDER!
-        #newids = list(newids)
         newids = invertselection(ids, selfid)
         return self.takeids(newids)
 
@@ -1401,15 +1325,8 @@ class VarsClass(object):
         for i in range(self.len()):
             if not (i % 100):
                 print("%d / %d" % (i, self.len()))
-            # matchid, dist = findmatch(searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=1)  # silent=2*(i<>38)-1
             matchid, dist = findmatch(
-                searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=0)  # silent=2*(i<>38)-1
-# print self.x[i], self.y[i], matchid,
-# if matchid < self.len():
-# print searchcat.id[matchid], searchcat.x[matchid], searchcat.y[matchid]
-# else:
-# print
-# pause()
+                searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=0)
             matchids.append(matchid)
             dists.append(dist)
         matchids = np.array(matchids)
@@ -1524,23 +1441,6 @@ class VarsClass(object):
         else:
             os.system('cat tmp.cat')
         os.remove('tmp.cat')
-# def takecids(self, ids):
-##         selfid = self.id.astype(int)
-##         ids = ids.astype(int)
-##         n = max((max(selfid), max(ids)))
-##         takeme1 = np.zeros(n+1)
-##         takeme2 = np.zeros(n+1)
-##         put(takeme1, selfid, 1)
-##         put(takeme2, ids, 1)
-##         takeme = takeme1 * takeme2
-##         takeme = take(takeme, selfid)
-# return self.subset(takeme)
-# def labelstr(self):
-# return string.join(labels, ', ')[:-2]
-        # FORGET THIS!  JUST USE copy.deepcopy
-##         selfcopy = VarsClass()
-##         selfcopy.data = self.data[:]
-##         selfcopy.labels = self.labels.copy()
 
 
 def loadvarswithclass(filename, dir="", silent=0, labels='', header='', headlines=0):
@@ -1555,8 +1455,6 @@ def loadvarswithclass(filename, dir="", silent=0, labels='', header='', headline
 
 
 loadcat = loadvarswithclass
-
-# def loadcat(filename, dir="", silent=0):
 
 
 def loadimcat(filename, dir="", silent=0):
