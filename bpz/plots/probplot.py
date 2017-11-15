@@ -18,14 +18,18 @@ from __future__ import print_function
 # zbmin & zbmax CONTAIN 95% OF P(z) (EACH WING CONTAINS 2.5%)
 # -- UNLESS P(z) IS TOO SHARP: MIN_RMS=0.06 TAKES OVER: dz >= 2 * 0.06 * (1+z)
 
-#from ksbtools import *
-#htmldir = loadfile('/home/coe/UDF/htmldir.txt')[0]
-
 from builtins import range
 from past.utils import old_div
-from bpz.coetools import *
-from coeplott import *
+from bpz import coetools
+from bpz import MLab_coe
+from bpz import coeio
+import coeplot
+import pylab
+import sys
+import os
+import numpy as np
 from os.path import exists, join
+
 
 htmldir = ''
 
@@ -43,19 +47,19 @@ def probplot(root, id1, zmax=None, zspec=-1, save=1, pshow=0, nomargins=0, outdi
         if save:
             print('CREATING ' + join(outdir, outimg) + '...')
         if nomargins:
-            figure(1, figsize=(4, 2))
-            clf()
-            axes([0.03, 0.2, 0.94, 0.8])
+            pylab.figure(1, figsize=(4, 2))
+            pylab.clf()
+            pylab.axes([0.03, 0.2, 0.94, 0.8])
         else:
-            figure()
-            clf()
-        ioff()
+            pylab.figure()
+            pylab.clf()
+        pylab.ioff()
         fprob = open(root + '.probs', 'r')
         line = fprob.readline()  # header
-        zrange = strbtw(line, 'arange(', ')')
-        zrange = stringsplitatof(zrange, ',')
+        zrange = coetools.strbtw(line, 'arange(', ')')
+        zrange = coetools.stringsplitatof(zrange, ',')
         # print zrange
-        z = arange(zrange[0], zrange[1], zrange[2])
+        z = np.arange(zrange[0], zrange[1], zrange[2])
 
         if type(id1) == str:
             i = int(id1[1:]) - 1
@@ -81,13 +85,13 @@ def probplot(root, id1, zmax=None, zspec=-1, save=1, pshow=0, nomargins=0, outdi
 
         fprob.close()
 
-        prob = stringsplitatof(line[i:-1])
+        prob = coetools.stringsplitatof(line[i:-1])
         n = len(prob)
         #z = (arange(n) + 1) * 0.01
         if zmax == None:
             zmax = max(z)
         else:
-            nmax = roundint(old_div(zmax, zrange[2]))
+            nmax = MLab_coe.roundint(old_div(zmax, zrange[2]))
             z = z[:nmax]  # nmax+1
             prob = prob[:nmax]  # nmax+1
 
@@ -115,7 +119,7 @@ def probplot(root, id1, zmax=None, zspec=-1, save=1, pshow=0, nomargins=0, outdi
 
         fin.close()
 
-        data = stringsplitatof(line[i:])
+        data = coetools.stringsplitatof(line[i:])
         labels = labels[1:]  # get rid of "id"
         vars = {labels[i]: data[i] for i in range(len(labels) - 1)}
         dz = 2 * 0.06 * (1 + vars['zb'])  # 2-sigma = 95% (ODDS)
@@ -124,23 +128,23 @@ def probplot(root, id1, zmax=None, zspec=-1, save=1, pshow=0, nomargins=0, outdi
 
         if vars['zspec'] >= 0:
             lw = [5, 3][nomargins]
-            vline([vars['zspec']], (1, 0, 0), linewidth=lw, alpha=0.5)
+            coeplot.vline([vars['zspec']], (1, 0, 0), linewidth=lw, alpha=0.5)
           
-        fillbetween(zc, zeros(len(pc)), zc, pc, facecolor='blue')
-        plot([zc[0], zc[-1]], [0, 0], color='white')
+        coeplot.fillbetween(zc, np.zeros(len(pc)), zc, pc, facecolor='blue')
+        pylab.plot([zc[0], zc[-1]], [0, 0], color='white')
       
-        xlabel('z')
+        pylab.xlabel('z')
         if nomargins:
-            ax = gca()
+            ax = pylab.gca()
             ax.set_yticklabels([])
         else:
-            ylabel('P(z)')
-        ylim(0, 1.05 * pmax)
+            pylab.ylabel('P(z)')
+        pylab.ylim(0, 1.05 * pmax)
         if save:
-            savefig(join(outdir, outimg))
+            pylab.savefig(join(outdir, outimg))
             os.system('chmod 644 ' + join(outdir, outimg))
         if pshow:
-            show()
+            pylab.show()
             print('KILL PLOT WINOW TO TERMINATE OR CONTINUE.')
 
 
@@ -148,7 +152,7 @@ if __name__ == '__main__':
     id1 = sys.argv[2]
     if id1[0] != 'i':
         id1 = int(id1)
-    params = params_cl()
+    params = coeio.params_cl()
     save_plots = 'SAVE' in params
     show_plots = 1 - save_plots
     zspec = params.get('ZSPEC', -1)
@@ -156,5 +160,4 @@ if __name__ == '__main__':
     nomargins = 'NOMARGINS' in params
     probplot(sys.argv[1], id1, zmax=zmax, zspec=zspec,
              save=save_plots, pshow=show_plots, nomargins=nomargins)
-else:
-    pass
+

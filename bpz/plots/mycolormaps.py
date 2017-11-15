@@ -15,10 +15,11 @@
 # OR:
 # >>> colormap(x, y, z, cmap=cm.gray1070)
 
-from pylab import *
+import numpy as np
+import pylab
 import matplotlib
 
-LUTSIZE = mpl.rcParams['image.lut']
+LUTSIZE = pylab.mpl.rcParams['image.lut']
 
 # cm.datad.keys()
 
@@ -32,19 +33,19 @@ _gray1070_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.gray1070 = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.gray1070 = matplotlib.colors.LinearSegmentedColormap(
     'gray1070', _gray1070_data, LUTSIZE)
 
-cm.datad['gray1070'] = _gray1070_data
+pylab.cm.datad['gray1070'] = _gray1070_data
 
 
 def gray1070():
-    rc('image', cmap='gray1070')
-    im = gci()
+    pylab.rc('image', cmap='gray1070')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.gray1070)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.gray1070)
+    pylab.draw_if_interactive()
 
 #################################
 
@@ -56,19 +57,19 @@ _gray2070_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.gray2070 = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.gray2070 = matplotlib.colors.LinearSegmentedColormap(
     'gray2070', _gray2070_data, LUTSIZE)
 
-cm.datad['gray2070'] = _gray2070_data
+pylab.cm.datad['gray2070'] = _gray2070_data
 
 
 def gray2070():
-    rc('image', cmap='gray2070')
-    im = gci()
+    pylab.rc('image', cmap='gray2070')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.gray2070)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.gray2070)
+    pylab.draw_if_interactive()
 
 #################################
 
@@ -80,19 +81,19 @@ _gray0010_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.gray0010 = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.gray0010 = matplotlib.colors.LinearSegmentedColormap(
     'gray0010', _gray0010_data, LUTSIZE)
 
-cm.datad['gray0010'] = _gray0010_data
+pylab.cm.datad['gray0010'] = _gray0010_data
 
 
 def gray0010():
-    rc('image', cmap='gray0010')
-    im = gci()
+    pylab.rc('image', cmap='gray0010')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.gray0010)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.gray0010)
+    pylab.draw_if_interactive()
 
 #################################
 
@@ -104,19 +105,19 @@ _grayinv_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.grayinv = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.grayinv = matplotlib.colors.LinearSegmentedColormap(
     'grayinv', _grayinv_data, LUTSIZE)
 
-cm.datad['grayinv'] = _grayinv_data
+pylab.cm.datad['grayinv'] = _grayinv_data
 
 
 def grayinv():
-    rc('image', cmap='grayinv')
-    im = gci()
+    pylab.rc('image', cmap='grayinv')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.grayinv)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.grayinv)
+    pylab.draw_if_interactive()
 
 #################################
 
@@ -128,19 +129,19 @@ _grayinv20_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.grayinv20 = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.grayinv20 = matplotlib.colors.LinearSegmentedColormap(
     'grayinv20', _grayinv20_data, LUTSIZE)
 
-cm.datad['grayinv20'] = _grayinv20_data
+pylab.cm.datad['grayinv20'] = _grayinv20_data
 
 
 def grayinv20():
-    rc('image', cmap='grayinv20')
-    im = gci()
+    pylab.rc('image', cmap='grayinv20')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.grayinv20)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.grayinv20)
+    pylab.draw_if_interactive()
 
 #################################
 
@@ -152,19 +153,19 @@ _grayinv2070_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.grayinv2070 = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.grayinv2070 = matplotlib.colors.LinearSegmentedColormap(
     'grayinv2070', _grayinv2070_data, LUTSIZE)
 
-cm.datad['grayinv2070'] = _grayinv2070_data
+pylab.cm.datad['grayinv2070'] = _grayinv2070_data
 
 
 def grayinv2070():
-    rc('image', cmap='grayinv2070')
-    im = gci()
+    pylab.rc('image', cmap='grayinv2070')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.grayinv2070)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.grayinv2070)
+    pylab.draw_if_interactive()
 
 #################################
 
@@ -176,19 +177,19 @@ _grayinv2090_data = {
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.grayinv2090 = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.grayinv2090 = matplotlib.colors.LinearSegmentedColormap(
     'grayinv2090', _grayinv2090_data, LUTSIZE)
 
-cm.datad['grayinv2090'] = _grayinv2090_data
+pylab.cm.datad['grayinv2090'] = _grayinv2090_data
 
 
 def grayinv2090():
-    rc('image', cmap='grayinv2090')
-    im = gci()
+    pylab.rc('image', cmap='grayinv2090')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.grayinv2090)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.grayinv2090)
+    pylab.draw_if_interactive()
 
 #################################
 # ~/p/colormapnew2.py
@@ -196,7 +197,7 @@ def grayinv2090():
 # colormap_map[ 'jetw' ] = array(
 
 
-data = array(
+data = np.array(
     [[1, 1, 1],
      [0.0, 0.0, 0.5625],
      [0.0, 0.0, 0.625],
@@ -264,25 +265,25 @@ data = array(
      [0.5625, 0.0, 0.0]],
     float)
 
-red, green, blue = transpose(data)
+red, green, blue = np.transpose(data)
 n = len(red)
-x = mgrid[0:1:n * 1j]
+x = np.mgrid[0:1:n * 1j]
 
 _jetw_data = {}
-_jetw_data['red'] = transpose(array([x, red, red]))
-_jetw_data['green'] = transpose(array([x, green, green]))
-_jetw_data['blue'] = transpose(array([x, blue, blue]))
+_jetw_data['red'] = np.transpose(np.array([x, red, red]))
+_jetw_data['green'] = np.transpose(np.array([x, green, green]))
+_jetw_data['blue'] = np.transpose(np.array([x, blue, blue]))
 
-cm.jetw = matplotlib.colors.LinearSegmentedColormap(
+pylab.cm.jetw = matplotlib.colors.LinearSegmentedColormap(
     'jetw', _jetw_data, LUTSIZE)
 
-cm.datad['jetw'] = _jetw_data
+pylab.cm.datad['jetw'] = _jetw_data
 
 
 def jetw():
-    rc('image', cmap='jetw')
-    im = gci()
+    pylab.rc('image', cmap='jetw')
+    im = pylab.gci()
 
     if im is not None:
-        im.set_cmap(cm.jetw)
-    draw_if_interactive()
+        im.set_cmap(pylab.cm.jetw)
+    pylab.draw_if_interactive()
