@@ -204,9 +204,6 @@ class bpzPlots(object):
             # print 'fo', fo
             # print 'efo', efo
             prar = array([ft, fo, efo])
-            if 0:
-                print('         ft                fo              efo')
-                print(transpose(prar))
 
             # Get the redshift, type and magnitude of the galaxy
             m, z, t = all[i_id, 1], all[i_id, 2], all[i_id, 3]
@@ -440,8 +437,7 @@ class bpzPlots(object):
                 color = 'red'
                 blue = 'blue'
                 colorful = 'COLORFUL' in params
-                if 1:
-                    color = customfiltcolor(filters[i], lambda_m[i])
+                color = customfiltcolor(filters[i], lambda_m[i])
 
                 if filters[i] in list(filtdict.keys()):
                     filtnick = filtdict[filters[i]][1:-1]
@@ -458,10 +454,9 @@ class bpzPlots(object):
                     if max(eft) < yyymax * 10:
                         # print 'max(eft) < yyymax*10'
                         rectwidth = .015 * (xrange[1] - xrange[0])
-                        if 1:  # logx
-                            rectwidthlog = .015 * \
-                                (log10(xrange[1]) - log10(xrange[0]))
-                            rectwidth = rectwidthlog * lambda_m[i] / log10(e)
+                        rectwidthlog = .015 * \
+                                       (log10(xrange[1]) - log10(xrange[0]))
+                        rectwidth = rectwidthlog * lambda_m[i] / log10(e)
                         if not nobox:  # blue rectangles (model fluxes)
                             rectangle([lambda_m[i] - rectwidth, ft[i] - eft[i]], [
                                       lambda_m[i] + rectwidth, ft[i] + eft[i]], color=blue, linewidth=linewidth)
@@ -486,10 +481,6 @@ class bpzPlots(object):
                                 [99 - efo[i]]), color='k', xlog=plotlogx, lw=linewidth, zorder=zorder + 1)
                         yl = min([fo[i], ft[i] - eft[i] * 0.7])
                     else:  # NOT DETECTED
-                        if 0:
-                            print('NOT DETECTED')
-                            print([lambda_m[i]], [fo[i]])
-                            print([lambda_m[i], lambda_m[i]], [0, efo[i]])
                         plot([lambda_m[i]], [fo[i]], '^', markerfacecolor=color,
                              markeredgecolor=color, markersize=ms)
                         plot([lambda_m[i], lambda_m[i]], [0., efo[i]],

@@ -29,11 +29,6 @@ from __future__ import print_function
 #   Redo all plots or just the sed or P(z) plots
 #   Default: Don't redo plots if they already exist
 
-#################################
-# Color image & segment support turned off:
-# python $BPZPATH/plots/webpage.py root ids -DIR outdir -SEGM segmids
-# python $BPZPATH/plots/webpage.py A1689 1702,1718 -COLOR A1689.tif -OFFSET 329,212 -SEGMOFFSET -21,-20
-
 # ~/bpz-1.99.2/plots/webpage.py
 # ~/ACS/CL0024/colorpro/webpage.py
 # label.py
@@ -44,78 +39,16 @@ from __future__ import print_function
 # segm.fits
 # color image
 import os
-from past.utils import old_div
-from bpz.coetools import *
+from bpz import coetools
 from bpz import coeio
 import sedplotAB
 import probplot
 import string
+import numpy as np
+import sys
 
-#dir = join(home, 'ACS/color/production/CL0024')
-#file = join(dir, 'CL0024.png')
-
-# colorstamps/stamp###.png
-# segm/segm###.gif
-# sedplots/UDF_sed_###.png
-# probplots/probplot###.png
 
 n = 200  # IMAGE SIZE
-
-
-def colorstamps(cat, outdir, colorfile, addon='', offset=(0, 0)):
-    im = Image.open(colorfile)
-    nx, ny = im.size
-    dx = dy = old_div(n, 2)
-    dxo, dyo = offset
-    outdir = os.path.join(outdir, addon)
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-
-    for i in range(cat.len()):
-        id = roundint(cat.id[i])
-        outfile = 'stamp%d.png' % id
-        outfile = os.path.join(outdir, outfile)
-        if os.path.exists(outfile):
-            continue
-        else:
-            print(outfile)
-
-        x = roundint(cat.x[i])
-        y = roundint(cat.y[i])
-        stamp = im.crop((x - dx - dxo, ny - y - dy + dyo,
-                         x + dx - dxo, ny - y + dy + dyo))
-        stamp.save(outfile)
-
-
-def segmstamps(cat, outdir, segmfile, offset=(0, 0)):
-    segm = loadfits(segmfile)
-    dx = dy = old_div(n, 2)
-    dxo, dyo = offset
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-
-    segmids = cat.get('segmid', cat.id).round().astype(int)
-    segmgif = Image.new("L", (n, n))
-    for i in range(cat.len()):
-        id = segmids[i]
-        outfile = 'segm%d.gif' % id
-        outfile = os.path.join(outdir, outfile)
-        # delfile(outfile)
-        if os.path.exists(outfile):
-            continue
-        else:
-            print(outfile)
-
-        x = roundint(cat.x[i])
-        y = roundint(cat.y[i])
-        segmstamp = segm[y - dy - dyo:y + dy - dyo, x - dx - dxo:x + dx - dxo]
-        idstamp = equal(segmstamp, id).round().astype(int)\
-            + greater(segmstamp, 0).round().astype(int)
-        idstamp = 127 * (2 - idstamp)
-        data = ravel(idstamp)
-        segmgif.putdata(data)
-        segmgif = segmgif.transpose(Image.FLIP_TOP_BOTTOM)
-        segmgif.save(outfile)
 
 
 def sedplots(cat, root, outdir, redo=False):
@@ -156,14 +89,7 @@ def webpage(cat, bpzroot, outfile, ncolor=1, idfac=1.):
 
     bpzpath = os.environ.get('BPZPATH')
     inroll = os.path.join(bpzpath, 'plots')
-    if 0:
-        inroll = os.path.join(inroll, 'rollover.txt')
-        for line in loadfile(inroll, keepnewlines=1):
-            fout.write(line)
-
     fout.write('\n')
-    if 0:
-        fout.write('Roll mouse over color images to view segments.<br><br>\n\n')
     fout.write('<h1>BPZ results for %s.cat</h1>\n\n' % bpzroot)
     ids = cat.id.round().astype(int)
     segmids = cat.get('segmid', ids).round().astype(int)
@@ -189,16 +115,10 @@ def webpage(cat, bpzroot, outfile, ncolor=1, idfac=1.):
 
         for addon in coloraddons:
             fout.write(' <a href="#">')
-            fout.write(' <img src="colorstamps/%s/stamp%d.png"' % (addon, id))
             fout.write(' hsrc="segm/segm%d.gif"' % segmid)
             fout.write(' border=0')
             fout.write('></a>\n')
-            # fout.write(' border=0 USEMAP="#map%d"' % id)
 
-        if 0:
-            fout.write(' <img src="segm/segm%d.gif" border=0>\n' % segmid)
-        #fout.write(' <img src="sedplots/%s_sed_%d.png" border=0>\n' % (bpzroot, segmid))
-        #fout.write(' <img src="probplots/probplot%d.png" border=0>' % segmid)
         fout.write(
             ' <img src="sedplots/%s_sed_%d.png"   border=0 height=300 width=400>\n' % (bpzroot, segmid))
         fout.write(
@@ -231,52 +151,29 @@ def run():
             id_str = sys.argv[2]
 
             if id_str[-2:] == '.i':  # External file with IDs (one per line)
-                ids = ravel(loaddata(id_str).round().astype(int))
+                ids = np.ravel(coeio.loaddata(id_str).round().astype(int))
                 mycat = cat.takeids(ids)
             elif id_str[0] == 'i':  # Indices
                 num = id_str[1:]
                 if string.find(num, '-') == -1:  # single number
                     i = int(id_str[1:])
-                    mycat = cat.take(array([i + 1]))
+                    mycat = cat.take(np.array([i + 1]))
                 else:
                     lo, hi = num.split('-')
                     lo = lo or 1
                     lo = int(lo)
                     hi = int(hi)
                     hi = hi or cat.len()
-                    ii = arange(lo - 1, hi)
+                    ii = np.arange(lo - 1, hi)
                     mycat = cat.take(ii)
             else:  # IDs separated by commas
-                ids = stringsplitatoi(id_str, ',')
+                ids = coetools.stringsplitatoi(id_str, ',')
                 mycat = cat.takeids(ids)
 
     params = coeio.params_cl()
     outdir = params.get('DIR', 'html')
     if not os.path.exists(outdir):
         os.mkdir(outdir)
-
-    if 0:
-        segmfile = params.get('SEGM', 'segm')
-
-        if 'SEGMID' in list(params.keys()):
-            segm_str = params['SEGMID']
-            if id_str[-2:] == '.i':
-                segmids = ravel(loaddata(id_str).round().astype(int))
-            else:
-                segmids = stringsplitatoi(id_str, ',')
-            mycat.assign('segmid', segmids)
-
-        #colorfile = params['COLOR']
-        colorfiles = params.get('COLOR', bpzroot + '.png')
-        # colorfiles = list(colorfiles)  # MAKE LIST IF ONLY ONE
-        if type(colorfiles) == str:
-            colorfiles = [colorfiles]
-
-        offset = params.get('OFFSET', '0,0')
-        offset = stringsplitatoi(offset, ',')
-
-        segmoffset = params.get('SEGMOFFSET', '0,0')
-        segmoffset = stringsplitatoi(segmoffset, ',')
 
     idfac = params.get('IDFAC', 1.)
 
@@ -290,13 +187,6 @@ def run():
     ltrs[0] = ''
 
     colorfiles = []
-    if 0:
-        for colorfile, addon in zip(colorfiles, ltrs):
-            colorstamps(mycat, os.path.join(outdir, 'colorstamps'),
-                        colorfile, addon, offset)  # id x y
-
-        segmstamps(mycat, os.path.join(outdir, 'segm'),
-                   segmfile, segmoffset)  # id/segmid x y
 
     sedplots(mycat, bpzroot, os.path.join(outdir, 'sedplots'), redo=redo)  # id
     probplots(mycat, bpzroot, os.path.join(outdir, 'probplots'),

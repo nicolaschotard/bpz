@@ -12,15 +12,7 @@ die = sys.exit
 home = os.environ.get('HOME', '')
 
 
-def color1to255(color):
-    # CONVERT TO 0-255 SCALE
-    return tuple((np.array(color) * 255. + 0.49).astype(int).tolist())
-
-
 def color2hex(color):
-    if 0:  # 0 < max(color) <= 1:  # 0-1 SCALE
-        # BUT EVERY ONCE IN A WHILE, YOU'LL GET A (0,0,1) OUT OF 255...
-        color = color1to255(color)
     colorhex = '#'
     for val in color:
         h = hex(val)[2:]

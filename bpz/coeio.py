@@ -965,17 +965,16 @@ class VarsClass(object):
         exec('self.%s = data' % label)
 
     def add(self, label, data):
-        if 1:  # self.labels:
-            if coetools.singlevalue(data):
-                if self.len():
-                    data = np.zeros(self.len(), float) + data
-                else:
-                    data = np.array([float(data)])
-            elif self.len() and (len(data) != self.len()):
-                print('WARNING!! in loadvarswithclass.add:')
-                print('len(%s) = %d BUT len(id) = %d' %
-                      (label, len(data), self.len()))
-                print()
+        if coetools.singlevalue(data):
+            if self.len():
+                data = np.zeros(self.len(), float) + data
+            else:
+                data = np.array([float(data)])
+        elif self.len() and (len(data) != self.len()):
+            print('WARNING!! in loadvarswithclass.add:')
+            print('len(%s) = %d BUT len(id) = %d' %
+                  (label, len(data), self.len()))
+            print()
         self.labels.append(label)
         exec('self.%s = data.astype(float)' % label)
 

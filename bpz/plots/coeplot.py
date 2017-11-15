@@ -602,10 +602,6 @@ def killplot():
     ioff()
 
 
-if 0:
-    killplot()
-
-
 # WHEN YOU show() THE NEXT PLOT,
 # YOU'LL STILL BE ABLE TO USE THE Python SHELL
 # PLUS, THE PLOT WILL BE AUTOMATICALLY UPDATED WITH EACH COMMAND YOU GIVE

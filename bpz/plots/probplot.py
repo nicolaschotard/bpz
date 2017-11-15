@@ -128,15 +128,6 @@ def probplot(root, id1, zmax=None, zspec=-1, save=1, pshow=0, nomargins=0, outdi
           
         fillbetween(zc, zeros(len(pc)), zc, pc, facecolor='blue')
         plot([zc[0], zc[-1]], [0, 0], color='white')
-        if 0:
-            p.add(FillBelow(zc, pc, color='grey50'))
-            p.add(Curve([zb, zb], [0, pmax * .1], color='cyan', linewidth=5))
-            p.add(Curve([zbmin, zbmin], [0, pmax * .07],
-                        color='green', linewidth=5))
-            p.add(Curve([zbmax, zbmax], [0, pmax * .07],
-                        color='green', linewidth=5))
-            p.add(Curve([zlo, zlo], [0, pmax * .07], color='red'))
-            p.add(Curve([zhi, zhi], [0, pmax * .07], color='red'))
       
         xlabel('z')
         if nomargins:
