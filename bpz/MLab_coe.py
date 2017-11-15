@@ -86,12 +86,12 @@ def Psig(P, nsigma=1):
 
 def xsig(x, P, nsigma=1):
     print('xsigmom MUCH MORE ACCURATE THAN xsig IN MLab_coe')
-    return old_div(p2p(take(x, Psig(P, nsigma))), 2.)
+    return old_div(p2p(np.take(x, Psig(P, nsigma))), 2.)
 
 
 def gaussin(nsigma=1):
     """FRACTION WITHIN nsigma"""
-    return erf(old_div(nsigma, sqrt(2)))
+    return erf(old_div(nsigma, np.sqrt(2)))
 
 
 def gaussp(nsigma=1):
@@ -353,12 +353,12 @@ def gauss1(r, sig=1.):
 
 def atanxy(x, y, degrees=0):
     """ANGLE CCW FROM x-axis"""
-    theta = arctan(divsafe(y, x, inf=1e30, nan=0))
-    theta = np.where(np.less(x, 0), theta + pi, theta)
-    theta = np.where(logical_and(np.greater(x, 0), np.less(y, 0)),
-                  theta + 2 * pi, theta)
+    theta = np.arctan(divsafe(y, x, inf=1e30, nan=0))
+    theta = np.where(np.less(x, 0), theta + np.pi, theta)
+    theta = np.where(np.logical_and(np.greater(x, 0), np.less(y, 0)),
+                     theta + 2 * np.pi, theta)
     if degrees:
-        theta = theta * 180. / pi
+        theta = theta * 180. / np.pi
     return theta
 
 
@@ -368,7 +368,7 @@ def CCWsort(x, y):
     xc = mean(x)
     yc = mean(y)
     ang = atanxy(x - xc, y - yc)
-    SI = np.array(argsort(ang))
+    SI = np.array(np.argsort(ang))
     x2 = x.take(SI, 0)
     y2 = y.take(SI, 0)
     return x2, y2
@@ -395,11 +395,11 @@ def divsafe(a, b, inf=np.Inf, nan=np.NaN):
 
 
 def floorint(x):
-    return(int(floor(x)))
+    return(int(np.floor(x)))
 
 
 def ceilint(x):
-    return(int(ceil(x)))
+    return(int(np.ceil(x)))
 
 
 def roundint(x):
@@ -430,7 +430,7 @@ def roundn(x, ndec=0):
 
 
 def percentile(p, x):
-    x = sort(x)
+    x = np.sort(x)
     i = p * (len(x) - 1.)
     return interp(i, np.arange(len(x)), x)
 
@@ -495,8 +495,8 @@ def linreg(X, Y):
         print("a= ", a)
         print("b= ", b)
     else:
-        print("a= %g \\pm t_{%d;\\alpha/2} %g" % (a, N - 2, sqrt(Var_a)))
-        print("b= %g \\pm t_{%d;\\alpha/2} %g" % (b, N - 2, sqrt(Var_b)))
+        print("a= %g \\pm t_{%d;\\alpha/2} %g" % (a, N - 2, np.sqrt(Var_a)))
+        print("b= %g \\pm t_{%d;\\alpha/2} %g" % (b, N - 2, np.sqrt(Var_b)))
         print("R^2= %g" % RR)
         print("s^2= %g" % ss)
     return a, b
@@ -525,17 +525,17 @@ def close(x, y, rtol=1.e-5, atol=1.e-8):
 def wherein(x, vals):
     """RETURNS 1 WHERE x IS IN vals"""
     try:
-        good = zeros(len(x), int)
+        good = np.zeros(len(x), int)
     except:
         good = 0
     for val in vals:
-        good = logical_or(good, close(x, val))
+        good = np.logical_or(good, close(x, val))
     return good
 
 
 def wherenotin(x, vals):
     """RETURNS 1 WHERE x ISN'T IN vals"""
-    return logical_not(wherein(x, vals))
+    return np.logical_not(wherein(x, vals))
 
 
 def count(a):
@@ -591,7 +591,7 @@ def norepxy(x, y, tol=1e-8):
     while i < len(x) - 1:
         j = i + 1
         while j < len(x):
-            dist = hypot(x[i] - x[j], y[i] - y[j])
+            dist = np.hypot(x[i] - x[j], y[i] - y[j])
             if dist < tol:
                 del x[j]
                 del y[j]
@@ -603,7 +603,7 @@ def norepxy(x, y, tol=1e-8):
 
 def isseq(a):
     """TELLS YOU IF a IS SEQUENTIAL, LIKE [3, 4, 5, 6]"""
-    return (alltrue(a == arange(len(a)) + a[0]))
+    return (np.alltrue(a == np.arange(len(a)) + a[0]))
 
 
 def between(lo, x, hi):  # --DC
@@ -611,7 +611,7 @@ def between(lo, x, hi):  # --DC
     # (can also use that syntax "lo < x < hi")
     if lo in [None, '']:
         try:
-            good = ones(len(x)).astype(int)
+            good = np.ones(len(x)).astype(int)
         except:
             good = 1
     else:
@@ -644,7 +644,7 @@ def qkfmt(x, max=8):
 
 def interp(x, xdata, ydata, silent=0, extrap=0):  # NEW VERSION!
     """DETERMINES y AS LINEAR INTERPOLATION OF 2 NEAREST ydata"""
-    SI = argsort(xdata)
+    SI = np.argsort(xdata)
     xdata = xdata.take(SI, 0)
     ydata = ydata.take(SI, 0)
     ii = np.searchsorted(xdata, x)
@@ -692,7 +692,7 @@ def interp1(x, xdata, ydata, silent=0):  # --DC
             print(x, 'OUT OF RANGE in interp in MLab_coe.py')
         return ydata[0]
     else:
-        i = searchsorted(xdata, x)
+        i = np.searchsorted(xdata, x)
         if xdata[i] == x:
             return ydata[i]
         else:
@@ -769,7 +769,7 @@ def eye(N, M=None, k=0, dtype=None):
     if type(M) == type('d'):
         typecode = M
         M = N
-    m = np.equal(subtract.outer(arange(N), arange(M)), -k)
+    m = np.equal(np.subtract.outer(np.arange(N), np.arange(M)), -k)
     return np.asarray(m, dtype=typecode)
 
 
@@ -782,7 +782,7 @@ def tri(N, M=None, k=0, dtype=None):
     if type(M) == type('d'):
         typecode = M
         M = N
-    m = np.greater_equal(subtract.outer(arange(N), arange(M)), -k)
+    m = np.greater_equal(np.subtract.outer(np.arange(N), np.arange(M)), -k)
     return m.astype(typecode)
 
 # Matrix manipulation
@@ -797,9 +797,9 @@ def diag(v, k=0):
     if len(s) == 1:
         n = s[0] + abs(k)
         if k > 0:
-            v = np.concatenate((zeros(k, v.dtype.char), v))
+            v = np.concatenate((np.zeros(k, v.dtype.char), v))
         elif k < 0:
-            v = np.concatenate((v, zeros(-k, v.dtype.char)))
+            v = np.concatenate((v, np.zeros(-k, v.dtype.char)))
         return eye(n, k=k) * v
     elif len(s) == 2:
         v = np.add.reduce(eye(s[0], s[1], k=k) * v)
@@ -845,11 +845,11 @@ def rot90(m, k=1):
     if k == 0:
         return m
     elif k == 1:
-        return transpose(fliplr(m))
+        return np.transpose(fliplr(m))
     elif k == 2:
         return fliplr(flipud(m))
     elif k == 3:
-        return fliplr(transpose(m))
+        return fliplr(np.transpose(m))
 
 
 def rot180(m):
@@ -918,7 +918,7 @@ def mean(m, axis=0):
 
 
 def meangeom(m):
-    return product(m) ** (old_div(1., len(m)))
+    return np.product(m) ** (old_div(1., len(m)))
 
 # sort is done in C but is done row-wise rather than column-wise
 
@@ -926,7 +926,7 @@ def meangeom(m):
 def msort(m):
     """msort(m) returns a sort along the first dimension of m as in MATLAB.
     """
-    return transpose(sort(transpose(m)))
+    return np.transpose(np.sort(np.transpose(m)))
 
 
 def median(m):
@@ -944,7 +944,7 @@ def rms(m):
     """Root-Mean-Squared, as advertised.
     std (below) first subtracts by the mean
     and later divides by N-1 instead of N"""
-    return sqrt(mean(m**2))
+    return np.sqrt(mean(m**2))
 
 
 def std(m):
@@ -952,17 +952,17 @@ def std(m):
     dimension of m.  The result is unbiased meaning division by len(m)-1.
     """
     mu = mean(m)
-    return old_div(sqrt(np.add.reduce(pow(m - mu, 2))), sqrt(len(m) - 1.0))
+    return old_div(np.sqrt(np.add.reduce(pow(m - mu, 2))), np.sqrt(len(m) - 1.0))
 
 
 stddev = std
 
 
 def meanstd(m):
-    """meanstd(m) returns the mean and uncertainty = std / sqrt(N-1)
+    """meanstd(m) returns the mean and uncertainty = std / np.sqrt(N-1)
     """
     mu = mean(m)
-    dmu = old_div(sqrt(np.add.reduce(pow(m - mu, 2))), (len(m) - 1.0))
+    dmu = old_div(np.sqrt(np.add.reduce(pow(m - mu, 2))), (len(m) - 1.0))
     return mu, dmu
 
 
@@ -975,12 +975,12 @@ def avgstd2(m):  # --DC
     while not done:
         n = len(m)
         mu = mean(m)
-        sig = old_div(sqrt(np.add.reduce(pow(m - mu, 2))), sqrt(n - 1.0))
+        sig = old_div(np.sqrt(np.add.reduce(pow(m - mu, 2))), np.sqrt(n - 1.0))
         good = np.greater(m, mu - 3 * sig) * np.less(m, mu + 3 * sig)
         m = np.compress(good, m)
         done = sum(good) == n
 
-    return [mu, old_div(sqrt(np.add.reduce(pow(m - mu, 2))), sqrt(len(m) - 1.0))]
+    return [mu, old_div(np.sqrt(np.add.reduce(pow(m - mu, 2))), np.sqrt(len(m) - 1.0))]
 
 
 def std2(m):  # --DC
@@ -1014,14 +1014,14 @@ def thetaavgstd(theta):
         thavg = theta[0]
         for i in range(1, n):
             th = theta[i]
-            if thavg - th > pi:
-                thavg = thavg - 2 * pi
-            elif th - thavg > pi:
-                th = th - 2 * pi
+            if thavg - th > np.pi:
+                thavg = thavg - 2 * np.pi
+            elif th - thavg > np.pi:
+                th = th - 2 * np.pi
             thavg = old_div((i * thavg + th), (i + 1))
         for i in range(n):
-            if theta[i] > thavg + pi:
-                theta[i] = theta[i] - 2 * pi
+            if theta[i] > thavg + np.pi:
+                theta[i] = theta[i] - 2 * np.pi
         thstd = std(theta)
         return([thavg, thstd])
 
@@ -1039,7 +1039,7 @@ sum = np.add.reduce  # ALLOWS FOR AXIS TO BE INPUT --DC
 
 def total(m):
     """RETURNS THE TOTAL OF THE ENTIRE ARRAY --DC"""
-    return sum(ravel(m))
+    return sum(np.ravel(m))
 
 
 def size(m):
@@ -1055,21 +1055,21 @@ def cumsum(m, axis=0):
     """cumsum(m) returns the cumulative sum of the elements along the
     first dimension of m.
     """
-    return add.accumulate(m, axis=axis)
+    return np.add.accumulate(m, axis=axis)
 
 
 def prod(m):
     """prod(m) returns the product of the elements along the first
     dimension of m.
     """
-    return multiply.reduce(m)
+    return np.multiply.reduce(m)
 
 
 def cumprod(m):
     """cumprod(m) returns the cumulative product of the elments along the
     first dimension of m.
     """
-    return multiply.accumulate(m)
+    return np.multiply.accumulate(m)
 
 
 def trapz(y, x=None):
@@ -1131,7 +1131,7 @@ def corrcoef(x, y=None):
     """
     c = cov(x, y)
     d = diag(c)
-    return old_div(c, sqrt(multiply.outer(d, d)))
+    return old_div(c, np.sqrt(np.multiply.outer(d, d)))
 
 
 def cov(m, y=None):
@@ -1141,12 +1141,12 @@ def cov(m, y=None):
         m = np.concatenate((m, y))
     sum_cov = 0.0
     for v in m:
-        sum_cov = sum_cov + multiply.outer(v, v)
-    return old_div((sum_cov - len(m) * multiply.outer(mu, mu)), (len(m) - 1.0))
+        sum_cov = sum_cov + np.multiply.outer(v, v)
+    return old_div((sum_cov - len(m) * np.multiply.outer(mu, mu)), (len(m) - 1.0))
 
 
 def histogram(a, bins):
-    n = searchsorted(sort(a), bins)
+    n = np.searchsorted(np.sort(a), bins)
     n = np.concatenate([n, [len(a)]])
     return n[1:] - n[:-1]
 

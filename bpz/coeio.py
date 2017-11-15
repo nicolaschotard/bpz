@@ -7,26 +7,13 @@ from __future__ import absolute_import
 from past.utils import old_div
 from . import coetools
 from . import MLab_coe
+from . import coeio
 import string
 
 import pyfits
-#try:
-#    import pyfits
-#    pyfitsloaded = True
-#except:
-#    pyfitsloaded = False
-
 import os
 import sys
 import numpy as np
-
-
-#if pyfitsloaded:
-#    # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
-#    pyfitsusesnumpy = (float(pyfits.__version__[:3]) >= 1.1) and (numerix == 'numpy')
-#    if not pyfitsusesnumpy:
-#        print('You probably should have done this first: setenv NUMERIX numpy')
-#        import numarray
 
 
 def recapfile(name, ext):
@@ -121,10 +108,10 @@ def dirfile(filename, dir=""):
     """RETURN CLEAN FILENAME COMPLETE WITH PATH
     JOINS filename & dir, CHANGES ~/ TO home"""
     if filename[0:2] == '~/':
-        filename = os.path.join(home, filename[2:])
+        filename = os.path.join(coetools.home, filename[2:])
     else:
         if dir[0:2] == '~/':
-            dir = os.path.join(home, dir[2:])
+            dir = os.path.join(coetools.home, dir[2:])
         filename = os.path.join(dir, filename)
     return filename
 
@@ -362,8 +349,6 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 units = dd
 
         if not machine:
-            # if not descriptions:
-            ##                 descriptions = labels
             if labels:
                 headline = ''
                 maxcollen = 1
@@ -666,14 +651,14 @@ class Cat2D_xyflip(object):
         exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
 
     def get(self, x, y, dointerp=0):
-        ix = interp(x, self.x, np.arange(len(self.x)))
-        iy = interp(y, self.y, np.arange(len(self.y)))
+        ix = MLab_coe.interp(x, self.x, np.arange(len(self.x)))
+        iy = MLab_coe.interp(y, self.y, np.arange(len(self.y)))
         if not dointerp:  # JUST GET NEAREST
-            ix = roundint(ix)
-            iy = roundint(iy)
+            ix = MLab_coe.roundint(ix)
+            iy = MLab_coe.roundint(iy)
             z = self.z[ix, iy]
         else:
-            z = bilin2(iy, ix, self.z)
+            z = MLab_coe.bilin2(iy, ix, self.z)
         return z
 
 
@@ -694,14 +679,14 @@ class Cat2D(object):
         exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
 
     def get(self, x, y, dointerp=0):
-        ix = interp(x, self.x, np.arange(len(self.x)))
-        iy = interp(y, self.y, np.arange(len(self.y)))
+        ix = np.interp(x, self.x, np.arange(len(self.x)))
+        iy = np.interp(y, self.y, np.arange(len(self.y)))
         if not dointerp:  # JUST GET NEAREST
-            ix = roundint(ix)
-            iy = roundint(iy)
+            ix = MLab_coe.roundint(ix)
+            iy = MLab_coe.roundint(iy)
             z = self.z[iy, ix]
         else:
-            z = bilin2(ix, iy, self.z)
+            z = MLab_coe.bilin2(ix, iy, self.z)
         return z
 
 
@@ -736,7 +721,7 @@ def savecat2d_xyflip(data, x, y, filename, dir="", silent=0):
     data = np.concatenate([x, data], 1)
     if filename[-1] != '+':
         filename += '+'
-    savedata1(data, filename, dir)
+    coeio.savedata1(data, filename, dir)
 
 
 def savedata1d(data, filename, dir="./", format='%6.5e ', header=""):
@@ -859,12 +844,12 @@ class VarsClass(object):
 
     def between(self, lo, labels, hi):
         """labels = list of labels or just one label"""
-        if type(labels) == list:
-            exec('good = between(lo, self.%s, hi)' % labels[0])
+        if isinstance(labels, list):
+            good = MLab_coe.between(lo, getattr(self, labels[0]), hi)
             for label in labels[1:]:
-                exec('good = good * between(lo, self.%s, hi)' % label)
+                good = good * MLab_coe.between(lo, getattr(self, label), hi)
         else:
-            exec('good = between(lo, self.%s, hi)' % labels)
+            good = MLab_coe.between(lo, getattr(self, labels), hi)
         self.good = good
         return self.subset(good)
 
@@ -873,7 +858,7 @@ class VarsClass(object):
         sub = VarsClass()
         sub.labels = self.labels[:]
         sub.taken = sub.takeind = indices
-        sub.data = take(self.updateddata(), indices, 1)
+        sub.data = np.take(self.updateddata(), indices, 1)
         sh = sub.data.shape
         if len(sh) == 3:
             sub.data = np.reshape(sub.data, sh[:2])
@@ -881,13 +866,13 @@ class VarsClass(object):
         return sub
 
     def put(self, label, indices, values):
-        exec('x = self.%s.copy()' % label)
-        put(x, indices, values)
-        exec('self.%s = x' % label)
+        x = getattr(self, label).copy()
+        np.put(x, indices, values)
+        setattr(self, label, x)
 
     def takeid(self, id, idlabel='id'):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
-        i = argmin(abs(selfid - id))
+        i = np.argmin(abs(selfid - id))
         if selfid[i] != id:
             print("PROBLEM! ID %d NOT FOUND IN takeid" % id)
             return None
@@ -896,25 +881,25 @@ class VarsClass(object):
 
     def putid(self, label, id, value, idlabel='id'):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
-        i = argmin(abs(selfid - id))
+        i = np.argmin(abs(selfid - id))
         if selfid[i] != id:
             print("PROBLEM! ID %d NOT FOUND IN putid" % id)
             return None
         else:
-            exec('x = self.%s.copy()' % label)
-            put(x, i, value)
-            exec('self.%s = x' % label)
+            x = getattr(self, label).copy()
+            np.put(x, i, value)
+            setattr(self, label, x)
 
     def takeids(self, ids, idlabel='id'):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         indexlist = np.zeros(max(selfid) + 1, int) - 1
-        put(indexlist, selfid, np.arange(len(selfid)))  # [- - - - 1 2 0]
-        indices = take(indexlist, np.array(ids).astype(int))
+        np.put(indexlist, selfid, np.arange(len(selfid)))  # [- - - - 1 2 0]
+        indices = np.take(indexlist, np.array(ids).astype(int))
         goodindices = np.compress(np.greater(indices, -1), indices)
         good = np.zeros(self.len(), int)
         good = good.astype(int)
         goodindices = goodindices.astype(int)
-        put(good, goodindices, 1)
+        np.put(good, goodindices, 1)
         self.good = good
         if -1 in indices:
             print("PROBLEM! NOT ALL IDS FOUND IN takeids!")
@@ -925,12 +910,12 @@ class VarsClass(object):
         # Given selfid, at ids, place values
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         maxselfid = max(selfid)
-        exec('x = self.%s.copy()' % label)
+        x = getattr(self, label).copy()
         idchecklist = selfid.copy()
         done = False
         while not done:  # len(idstochange):
             indexlist = np.zeros(maxselfid + 1, int) - 1
-            put(indexlist, idchecklist, np.arange(self.len()))  # [- - - - 1 2 0]
+            np.put(indexlist, idchecklist, np.arange(self.len()))  # [- - - - 1 2 0]
             # ids = [4 6]  ->  indices = [1 0]
             indices = np.take(indexlist, np.array(ids).astype(int))
             if (-1 in indices) and (rep < 2):
@@ -938,10 +923,10 @@ class VarsClass(object):
                 print(np.compress(np.less(indices, 0), ids))
             if coetools.singlevalue(values):
                 values = np.zeros(self.len(), float) + values
-            put(x, indices, values)
-            put(idchecklist, indices, 0)
+            np.put(x, indices, values)
+            np.put(idchecklist, indices, 0)
             if rep:  # Repeat if necessary
-                done = total(idchecklist) == 0
+                done = MLab_coe.total(idchecklist) == 0
                 rep += 1
             else:
                 done = 1
@@ -951,12 +936,12 @@ class VarsClass(object):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         n = max((max(selfid), max(ids)))
         indexlist = np.zeros(n + 1, int)
-        put(indexlist, selfid, np.arange(len(selfid)) + 1)  # [- - - - 1 2 0]
-        indices = take(indexlist, np.array(ids).astype(int))
+        np.put(indexlist, selfid, np.arange(len(selfid)) + 1)  # [- - - - 1 2 0]
+        indices = np.take(indexlist, np.array(ids).astype(int))
         indices = np.compress(indices, indices - 1)
         goodindices = np.compress(np.greater(indices, -1), indices)
         good = np.zeros(self.len(), int)
-        put(good, goodindices, 1)
+        np.put(good, goodindices, 1)
         self.good = good
         return self.take(indices)
 
@@ -964,7 +949,7 @@ class VarsClass(object):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
         if coetools.singlevalue(ids):
             ids = [ids]
-        newids = invertselection(ids, selfid)
+        newids = coetools.invertselection(ids, selfid)
         return self.takeids(newids)
 
     def get(self, label, orelse=None):
@@ -1010,9 +995,9 @@ class VarsClass(object):
             print("ERROR in loadvarswithclass.append: labels don't match")
         else:
             if over:  # OVERWRITE OLD OBJECTS WITH NEW WHERE IDS ARE THE SAME
-                commonids = common(self.id, self2.id)
+                commonids = coetools.common(self.id, self2.id)
                 if commonids:
-                    selfuniqueids = invertselection(commonids, self.id)
+                    selfuniqueids = coetools.invertselection(commonids, self.id)
                     self = self.takeids(selfuniqueids)
             for label in self.labels:
                 exec('self.%s = np.concatenate((self.get(label), self2.get(label)))' % label)

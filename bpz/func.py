@@ -14,10 +14,10 @@
 # but should give a big win on vectors.
 
 
-import numpy as np
+import types
 import operator
-import math
-from types import *
+import numpy as np
+
 
 ArrayType = type(np.asarray(1.0))
 UfuncType = type(np.add)
@@ -80,7 +80,7 @@ class FuncBinder(FuncOps):
     def __init__(self, a_f):
         if ((type(a_f) == UfuncType)
             or
-            (type(a_f) == InstanceType and
+            (type(a_f) == types.InstanceType and
              FuncOps in a_f.__class__.__bases__)):
             self.__call__ = a_f        # overwrite the existing call method
         self.call = a_f
@@ -169,7 +169,7 @@ class BinFuncOps(object):
         sum = np.take(a, [0], axis)
         out = np.zeros(a.shape, a.dtype.char)
         for i in range(1, a.shape[axis]):
-            out[all_but_axis(i, axis, n)] = self(sum, take(a, [i], axis))
+            out[all_but_axis(i, axis, n)] = self(sum, np.take(a, [i], axis))
         return out
 
     def outer(self, a, b):

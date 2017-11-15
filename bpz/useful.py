@@ -5,21 +5,24 @@ from __future__ import absolute_import
 
 # Useful functions and definitions
 
-from builtins import str
-from builtins import input
-from builtins import map
-from builtins import range
 from past.utils import old_div
-from builtins import object
 import os
 import sys
-from types import *
-from numpy import *
-from .MLab_coe import *
-from time import *
-from .spline import *
-from string import *  # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
-import random
+
+import types
+import numpy as np
+from . import MLab_coe
+import time
+from . import spline
+import string # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
+
+#from types import *
+#from numpy import *
+#from .MLab_coe import *
+#from time import *
+#from .spline import *
+#from string import *  # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
+#import random
 
 
 # If biggles installed allow the plot options in the tests
@@ -33,7 +36,6 @@ pi = 3.141592653
 
 
 def ejecuta(command=None, verbose=1):
-    import os
     if verbose:
         print(command)
     os.system(command)
