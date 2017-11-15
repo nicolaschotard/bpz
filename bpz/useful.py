@@ -16,19 +16,10 @@ import time
 from . import spline
 import string # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
 
-#from types import *
-#from numpy import *
-#from .MLab_coe import *
-#from time import *
-#from .spline import *
-#from string import *  # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
-#import random
-
-
 # If biggles installed allow the plot options in the tests
 plots = 1
 try:
-    from biggles import *
+    import biggle
 except:
     plots = 0
 
@@ -144,7 +135,7 @@ def put_str(file, tupla):
         cosas = []
         for j in range(len(tupla)):
             cosas.append(str(tupla[j][i]))
-        f.write(join(cosas) + '\n')
+        f.write(''.join(cosas) + '\n')
     f.close()
 
 # Files containing data
@@ -161,11 +152,11 @@ def get_data(file, cols=0, nrows='all'):
         nvar = len(cols)
     data = get_str(file, cols, nrows)
     if nvar == 1:
-        return array(list(map(float, data)))
+        return np.array(list(map(float, data)))
     else:
         data = list(data)
         for j in range(nvar):
-            data[j] = array(list(map(float, data[j])))
+            data[j] = np.array(list(map(float, data[j])))
         return tuple(data)
 
 
@@ -233,7 +224,7 @@ def get_2Darray(file, cols='all', nrows='all', verbose='no'):
 
     lista = get_data(file, cols, nrows)
     nl = len(lista[0])
-    x = zeros((nl, nc), float)
+    x = np.zeros((nl, nc), float)
     for i in range(nc):
         x[:, i] = lista[i]
     return x
@@ -257,16 +248,16 @@ def put_2Darray(file, array, header='', format='', append='no'):
 
 class watch(object):
     def set(self):
-        self.time0 = time()
+        self.time0 = time.time()
         print('')
-        print('Current time ', ctime(self.time0))
+        print('Current time ', time.ctime(self.time0))
         print()
 
     def check(self):
         if self.time0:
             print()
-            print("Elapsed time", strftime(
-                '%H:%M:%S', gmtime(time() - self.time0)))
+            print("Elapsed time", time.strftime(
+                '%H:%M:%S', time.gmtime(time.time() - self.time0)))
             print()
         else:
             print()
@@ -426,7 +417,7 @@ def ascend(x):
        Recommended usage: 
        if not ascend(x): sort(x) 
     """
-    return alltrue(greater_equal(x[1:], x[0:-1]))
+    return np.alltrue(np.greater_equal(x[1:], x[0:-1]))
 
 
 def match_resol(xg, yg, xf, method="linear"):
@@ -438,20 +429,20 @@ def match_resol(xg, yg, xf, method="linear"):
     """
     if method != "spline":
         if type(xf) == type(1.):
-            xf = array([xf])
+            xf = np.array([xf])
         ng = len(xg)
         # print argmin(xg[1:]-xg[0:-1]),min(xg[1:]-xg[0:-1]),xg[argmin(xg[1:]-xg[0:-1])]
         d = old_div((yg[1:] - yg[0:-1]), (xg[1:] - xg[0:-1]))
         # Get positions of the new x coordinates
-        ind = clip(searchsorted(xg, xf) - 1, 0, ng - 2)
-        ygn = take(yg, ind) + take(d, ind) * (xf - take(xg, ind))
+        ind = np.clip(np.searchsorted(xg, xf) - 1, 0, ng - 2)
+        ygn = np.take(yg, ind) + np.take(d, ind) * (xf - np.take(xg, ind))
         if len(ygn) == 1:
             ygn = ygn[0]
         return ygn
     else:
         low_slope = old_div((yg[1] - yg[0]), (xg[1] - xg[0]))
         high_slope = old_div((yg[-1] - yg[-2]), (xg[-1] - xg[-2]))
-        sp = Spline(xg, yg, low_slope, high_slope)
+        sp = spline.Spline(xg, yg, low_slope, high_slope)
         return sp(xf)
 
 
@@ -477,8 +468,8 @@ def match_objects(coords1, coords2, tail1=(), tail2=(), accuracy=1.):
     nc = len(coords1)
     np1 = len(coords1[0])
     np2 = len(coords2[0])
-    a1 = array(coords1)
-    a2 = array(coords2)
+    a1 = np.array(coords1)
+    a2 = np.array(coords2)
     nt1 = len(tail1)
     for i in range(nt1):
         if len(tail1[i]) != np1:
@@ -487,18 +478,18 @@ def match_objects(coords1, coords2, tail1=(), tail2=(), accuracy=1.):
     for i in range(nt2):
         if len(tail2[i]) != np2:
             raise 'Not the same lenght as coordinates 2'
-    match = zeros(np1, int) - 1
+    match = np.zeros(np1, int) - 1
     for j in range(np1):
         # dist=add.reduce((a1[:,j,NewAxis]-a2[:,:])**2)
         a1j = a1[:, j]
-        dist = add.reduce((reshape(a1j, (len(a1j), 1)) - a2)**2)
-        i_min = argmin(dist)
+        dist = np.add.reduce((np.reshape(a1j, (len(a1j), 1)) - a2)**2)
+        i_min = np.argmin(dist)
         if dist[i_min] < acc2:
             match[j] = i_min
-    good = greater_equal(match, 0)
-    n1 = compress(good, list(range(np1)))
-    match = compress(good, match)
-    a1 = compress(good, a1)
+    good = np.greater_equal(match, 0)
+    n1 = np.compress(good, list(range(np1)))
+    match = np.compress(good, match)
+    a1 = np.compress(good, a1)
     salida = list(a1)
     for i in range(nt1):
         if type(tail1[i][0]) == type('si'):
@@ -506,7 +497,7 @@ def match_objects(coords1, coords2, tail1=(), tail2=(), accuracy=1.):
             for j in n1:
                 t.append(tail1[i][j])
         else:
-            t = take(tail1[i], n1)
+            t = np.take(tail1[i], n1)
         salida.append(t)
     for i in range(nt2):
         if type(tail2[i][0]) == type('si'):
@@ -514,7 +505,7 @@ def match_objects(coords1, coords2, tail1=(), tail2=(), accuracy=1.):
             for j in match:
                 t.append(tail2[i][j])
         else:
-            t = take(tail2[i], match)
+            t = np.take(tail2[i], match)
         salida.append(t)
     return salida
 
@@ -535,8 +526,8 @@ def match_min(coords1, coords2, tail1=(), tail2=()):
     nc = len(coords1)
     np1 = len(coords1[0])
     np2 = len(coords2[0])
-    a1 = array(coords1)
-    a2 = array(coords2)
+    a1 = np.array(coords1)
+    a2 = np.array(coords2)
     nt1 = len(tail1)
     for i in range(nt1):
         if len(tail1[i]) != np1:
@@ -545,15 +536,15 @@ def match_min(coords1, coords2, tail1=(), tail2=()):
     for i in range(nt2):
         if len(tail2[i]) != np2:
             raise 'Not the same lenght as coordinates 2'
-    match = zeros(np1, int) - 1
+    match = np.zeros(np1, int) - 1
 
-    dist_min = zeros(np1) * 1.
+    dist_min = np.zeros(np1) * 1.
 
     for j in range(np1):
-        # dist=sqrt(add.reduce((a1[:,j,NewAxis]-a2[:,:])**2))
+        # dist=np.sqrt(add.reduce((a1[:,j,NewAxis]-a2[:,:])**2))
         a1j = a1[:, j]
-        dist = add.reduce((reshape(a1j, (len(a1j), 1)) - a2)**2)
-        i_min = argmin(dist)
+        dist = np.add.reduce((np.reshape(a1j, (len(a1j), 1)) - a2)**2)
+        i_min = np.argmin(dist)
         dist_min[j] = dist[i_min]
         match[j] = i_min
 
@@ -567,7 +558,7 @@ def match_min(coords1, coords2, tail1=(), tail2=()):
             for j in match:
                 t.append(tail2[i][j])
         else:
-            t = take(tail2[i], match)
+            t = np.take(tail2[i], match)
         salida.append(t)
 
     salida.append(dist_min)
@@ -590,8 +581,8 @@ def match_min2(coords1, coords2, tail1=(), tail2=()):
     nc = len(coords1)
     np1 = len(coords1[0])
     np2 = len(coords2[0])
-    a1 = array(coords1)
-    a2 = array(coords2)
+    a1 = np.array(coords1)
+    a2 = np.array(coords2)
     nt1 = len(tail1)
     for i in range(nt1):
         if len(tail1[i]) != np1:
@@ -600,15 +591,15 @@ def match_min2(coords1, coords2, tail1=(), tail2=()):
     for i in range(nt2):
         if len(tail2[i]) != np2:
             raise 'Not the same lenght as coordinates 2'
-    match = zeros(np1, int) - 1
-    dist_min = zeros(np1) * 1.
-    x2 = zeros(np1) * 1.
-    y2 = zeros(np1) * 1.
+    match = np.zeros(np1, int) - 1
+    dist_min = np.zeros(np1) * 1.
+    x2 = np.zeros(np1) * 1.
+    y2 = np.zeros(np1) * 1.
     for j in range(np1):
         # dist=add.reduce((a1[:,j,NewAxis]-a2[:,:])**2)
         a1j = a1[:, j]
-        dist = add.reduce((reshape(a1j, (len(a1j), 1)) - a2)**2)
-        i_min = argmin(dist)
+        dist = np.add.reduce((np.reshape(a1j, (len(a1j), 1)) - a2)**2)
+        i_min = np.argmin(dist)
         dist_min[j] = dist[i_min]
         x2[j], y2[j] = a2[0, i_min], a2[1, i_min]
         match[j] = i_min
@@ -626,7 +617,7 @@ def match_min2(coords1, coords2, tail1=(), tail2=()):
             for j in match:
                 t.append(tail2[i][j])
         else:
-            t = take(tail2[i], match)
+            t = np.take(tail2[i], match)
         salida.append(t)
 
     salida.append(dist_min)
@@ -635,7 +626,7 @@ def match_min2(coords1, coords2, tail1=(), tail2=()):
 
 def dist(x, y, xc=0., yc=0.):
     """Distance between point (x,y) and a center (xc,yc)"""
-    return sqrt((x - xc)**2 + (y - yc)**2)
+    return np.sqrt((x - xc)**2 + (y - yc)**2)
 
 
 def loc2d(a, extremum='max'):
@@ -648,11 +639,11 @@ def loc2d(a, extremum='max'):
         raise "Array dimension > 2"
     if extremum != 'min' and extremum != 'max':
         raise 'Which extremum are you looking for?'
-    x = ravel(a)
+    x = np.ravel(a)
     if extremum == 'min':
-        i = argmin(x)
+        i = np.argmin(x)
     else:
-        i = argmax(x)
+        i = np.argmax(x)
     i1 = old_div(i, forma[1])
     i2 = i % forma[1]
     return i1, i2
@@ -663,10 +654,10 @@ def hist(a, bins):
     Histogram of 'a' defined on the bin grid 'bins'
        Usage: h=hist(p,xp)
     """
-    n = searchsorted(sort(a), bins)
-    n = concatenate([n, [len(a)]])
-    n = array(list(map(float, n)))
-#    n=array(n)
+    n = np.searchsorted(np.sort(a), bins)
+    n = np.concatenate([n, [len(a)]])
+    n = np.array(list(map(float, n)))
+#    n=np.array(n)
     return n[1:] - n[:-1]
 
 
@@ -678,11 +669,11 @@ def bin_stats(x, y, xbins, stat='average'):
     """
     nbins = len(xbins)
     if stat == 'average' or stat == 'mean':
-        func = mean
+        func = np.mean
     elif stat == 'median':
-        func = median
+        func = np.median
     elif stat == 'rms' or stat == 'std':
-        func = std
+        func = np.std
     elif stat == 'std_robust' or stat == 'rms_robust':
         func = std_robust
     elif stat == 'mean_robust':
@@ -694,16 +685,16 @@ def bin_stats(x, y, xbins, stat='average'):
     results = []
     for i in range(nbins):
         if i < nbins - 1:
-            good = (greater_equal(x, xbins[i])
-                    * less(x, xbins[i + 1]))
+            good = (np.greater_equal(x, xbins[i])
+                    * np.less(x, xbins[i + 1]))
         else:
-            good = (greater_equal(x, xbins[-1]))
+            good = (np.greater_equal(x, xbins[-1]))
         if sum(good) > 1.:
-            results.append(func(compress(good, y)))
+            results.append(func(np.compress(good, y)))
         else:
             results.append(0.)
             print('Bin starting at xbins[%i] has %i points' % (i, sum(good)))
-    return array(results)
+    return np.array(results)
 
 
 def bin_aver(x, y, xbins):
@@ -727,9 +718,9 @@ def autobin_stats(x, y, n_bins=8, stat='average', n_points=None):
     """
 
     if not ascend(x):
-        ix = argsort(x)
-        x = take(x, ix)
-        y = take(y, ix)
+        ix = np.argsort(x)
+        x = np.take(x, ix)
+        y = np.take(y, ix)
     n = len(x)
     if n_points == None:
         # This throws out some points
@@ -748,11 +739,11 @@ def autobin_stats(x, y, n_bins=8, stat='average', n_points=None):
 
     # print 'stat', stat
     if stat == 'average' or stat == 'mean':
-        func = mean
+        func = np.mean
     elif stat == 'median':
-        func = median
+        func = np.median
     elif stat == 'rms' or stat == 'std':
-        func = std
+        func = np.std
     elif stat == 'std_robust' or stat == 'rms_robust':
         func = std_robust
     elif stat == 'mean_robust':
@@ -767,8 +758,8 @@ def autobin_stats(x, y, n_bins=8, stat='average', n_points=None):
         func = max  # --DC
 
     for i in range(n_bins):
-        xb.append(mean(x[i * n_points:(i + 1) * n_points]))
-        if func == std and n_points == 2:
+        xb.append(np.mean(x[i * n_points:(i + 1) * n_points]))
+        if func == np.std and n_points == 2:
             print('n_points==2; too few points to determine rms')
             print('Returning abs(y1-y2)/2. in each bin as rms')
             yb.append(old_div(abs(y[i * n_points] - y[i * n_points + 1]), 2.))
@@ -778,16 +769,16 @@ def autobin_stats(x, y, n_bins=8, stat='average', n_points=None):
             yb[-2] = old_div((yb[-2] + yb[-1]), 2.)
             xb = xb[:-1]
             yb = yb[:-1]
-    return array(xb), array(yb)
+    return np.array(xb), np.array(yb)
 
 
 def purge_outliers(x, n_sigma=3., n=5):
     # Experimental yet. Only 1 dimension
     for i in range(n):
-        med = median(x)
+        med = np.median(x)
         # rms=std_log(x)
-        rms = std(x)
-        x = compress(less_equal(abs(x - med), n_sigma * rms), x)
+        rms = np.std(x)
+        x = np.compress(np.less_equal(abs(x - med), n_sigma * rms), x)
     return x
 
 
@@ -802,40 +793,39 @@ class stat_robust(object):
         self.reject_fraction = reject_fraction
 
     def run(self):
-        good = ones(len(self.x))
+        good = np.ones(len(self.x))
         nx = sum(good)
         if self.reject_fraction == None:
             for i in range(self.n):
                 if i > 0:
-                    xs = compress(good, self.x)
+                    xs = np.compress(good, self.x)
                 else:
                     xs = self.x
                 #            aver=mean(xs)
-                aver = median(xs)
-                std1 = std(xs)
-                good = good * \
-                    less_equal(abs(self.x - aver), self.n_sigma * std1)
+                aver = np.median(xs)
+                std1 = np.std(xs)
+                good = good * np.less_equal(abs(self.x - aver), self.n_sigma * std1)
                 nnx = sum(good)
                 if nnx == nx:
                     break
                 else:
                     nx = nnx
         else:
-            np = float(len(self.x))
-            nmin = int((0.5 * self.reject_fraction) * np)
-            nmax = int((1. - 0.5 * self.reject_fraction) * np)
-            orden = argsort(self.x)
-            connect(arange(len(self.x)), sort(self.x))
-            good = greater(orden, nmin) * less(orden, nmax)
+            npx = float(len(self.x))
+            nmin = int((0.5 * self.reject_fraction) * npx)
+            nmax = int((1. - 0.5 * self.reject_fraction) * npx)
+            orden = np.argsort(self.x)
+            connect(np.arange(len(self.x)), np.sort(self.x))
+            good = np.greater(orden, nmin) * np.less(orden, nmax)
 
-        self.remaining = compress(good, self.x)
+        self.remaining = np.compress(good, self.x)
         self.max = max(self.remaining)
         self.min = min(self.remaining)
-        self.mean = mean(self.remaining)
-        self.rms = std(self.remaining)
-        self.rms0 = rms(self.remaining)  # --DC
-        self.median = median(self.remaining)
-        self.outliers = compress(logical_not(good), self.x)
+        self.mean = np.mean(self.remaining)
+        self.rms = np.std(self.remaining)
+        self.rms0 = np.rms(self.remaining)  # --DC
+        self.median = np.median(self.remaining)
+        self.outliers = np.compress(np.logical_not(good), self.x)
         self.n_remaining = len(self.remaining)
         self.n_outliers = len(self.outliers)
         self.fraction = 1. - \
@@ -844,42 +834,42 @@ class stat_robust(object):
 
 def std_robust(x, n_sigma=3., n=5):
     x = purge_outliers(x, n_sigma, n)
-    return std(x - mean(x))
+    return np.std(x - np.mean(x))
 
 
 def mean_robust(x, n_sigma=3., n=5):
     x = purge_outliers(x, n_sigma, n)
-    return mean(x)
+    return np.mean(x)
 
 
 def median_robust(x, n_sigma=3., n=5):
     x = purge_outliers(x, n_sigma, n)
-    return median(x)
+    return np.median(x)
 
 
-def std_log(x, fa=sqrt(20.)):
-    dx = std(x)
+def std_log(x, fa=np.sqrt(20.)):
+    dx = np.std(x)
     # print "std(x)",dx,
     #if abs(dx)<1e-100:dx=mean(abs(x))
     a = fa * dx
-    # print sqrt(average(a*a*log(1.+x*x/(a*a)))),
+    # print np.sqrt(average(a*a*log(1.+x*x/(a*a)))),
     # print std_robust(x,3,3),
     # print len(x)
-    return sqrt(average(a * a * log(1. + x * x / (a * a))))
+    return np.sqrt(np.average(a * a * np.log(1. + x * x / (a * a))))
 
 
 # def std_log(x,fa=20.):
 #    dx=median(abs(x))
 #    if abs(dx)<1e-100:dx=mean(abs(x))
 #    a=fa*dx
-#    return sqrt(average(a*a*log10(1.+x*x/(a*a))))
+#    return np.sqrt(average(a*a*log10(1.+x*x/(a*a))))
 
 def med_thr(x, thr=0.2, max_it=10):
-    xm = median(x)
+    xm = np.median(x)
     xm0 = xm + thr
     for i in range(max_it):
-        good = less_equal(x - xm, thr) * greater_equal(x - xm, -thr)
-        xm = median(compress(good, x))
+        good = np.less_equal(x - xm, thr) * np.greater_equal(x - xm, -thr)
+        xm = np.median(np.compress(good, x))
         if abs(xm - xm0) < old_div(thr, 1000.):
             break
         xm0 = xm
@@ -889,13 +879,13 @@ def med_thr(x, thr=0.2, max_it=10):
 
 def std_thr(x, thr=0.2, max_it=10):
     xm = med_thr(x, thr, max_it)
-    good = less_equal(x - xm, thr) * greater_equal(x - xm, -thr)
-    return std(compress(good, x))
+    good = np.less_equal(x - xm, thr) * np.greater_equal(x - xm, -thr)
+    return np.std(np.compress(good, x))
 
 
 def out_thr(x, thr=0.2, max_it=10):
     xm = med_thr(x, thr, max_it)
-    good = less_equal(x - xm, thr) * greater_equal(x - xm, -thr)
+    good = np.less_equal(x - xm, thr) * np.greater_equal(x - xm, -thr)
     return len(x) - sum(good)
 
 
@@ -903,7 +893,7 @@ def multicompress(condition, variables):
     lista = list(variables)
     n = len(lista)
     for i in range(n):
-        lista[i] = compress(condition, lista[i])
+        lista[i] = np.compress(condition, lista[i])
     return tuple(lista)
 
 
@@ -912,29 +902,29 @@ def multisort(first, followers):
     # of followers to it
     # Usage:
     # new_followers=multi_sort(first,followers)
-    order = argsort(first)
+    order = np.argsort(first)
     if type(followers) != type((1,)):
-        return take(followers, order)
+        return np.take(followers, order)
     else:
         nvectors = len(followers)
         lista = []
         for i in range(nvectors):
-            lista.append(take(followers[i], order))
+            lista.append(np.take(followers[i], order))
         return tuple(lista)
 
 
 def erfc(x):
     """
     Returns the complementary error function erfc(x)
-    erfc(x)=1-erf(x)=2/sqrt(pi)*\int_x^\inf e^-t^2 dt   
+    erfc(x)=1-erf(x)=2/np.sqrt(pi)*\int_x^\inf e^-t^2 dt   
     """
     try:
         x.shape
     except:
-        x = array([x])
+        x = np.array([x])
     z = abs(x)
     t = old_div(1., (1. + 0.5 * z))
-    erfcc = t * exp(-z * z -
+    erfcc = t * np.exp(-z * z -
                     1.26551223 + t * (
                         1.00002368 + t * (
                             0.37409196 + t * (
@@ -945,22 +935,22 @@ def erfc(x):
                                                 1.48851587 + t * (
                                                     -0.82215223 + t * 0.17087277)
                                             ))))))))
-    erfcc = where(less(x, 0.), 2. - erfcc, erfcc)
+    erfcc = np.where(np.less(x, 0.), 2. - erfcc, erfcc)
     return erfcc
 
 
 def erf(x):
     """
     Returns the error function erf(x)
-    erf(x)=2/sqrt(pi)\int_0^x \int e^-t^2 dt
+    erf(x)=2/np.sqrt(pi)\int_0^x \int e^-t^2 dt
     """
     return 1. - erfc(x)
 
 
 def erf_brute(x):
     step = 0.00001
-    t = arange(0., x + step, step)
-    f = 2. / sqrt(pi) * exp(-t * t)
+    t = np.arange(0., x + step, step)
+    f = 2. / np.sqrt(pi) * np.exp(-t * t)
     return sum(f) * step
 
 
@@ -968,17 +958,17 @@ def erfc_brute(x):
     return 1. - erf_brute(x)
 
 
-def gauss_int_brute(x=arange(0., 3., .01), average=0., sigma=1.):
+def gauss_int_brute(x=np.arange(0., 3., .01), average=0., sigma=1.):
     step = x[1] - x[0]
-    gn = 1. / sqrt(2. * pi) / sigma * exp(-(x - average)**2 / 2. / sigma**2)
-    return add.accumulate(gn) * step
+    gn = 1. / np.sqrt(2. * pi) / sigma * np.exp(-(x - average)**2 / 2. / sigma**2)
+    return np.add.accumulate(gn) * step
 
 
 def gauss_int_erf(x=(0., 1.), average=0., sigma=1.):
     """
-    Returns integral (x) of p=int_{-x1}^{+x} 1/sqrt(2 pi)/sigma exp(-(t-a)/2sigma^2) dt
+    Returns integral (x) of p=int_{-x1}^{+x} 1/np.sqrt(2 pi)/sigma exp(-(t-a)/2sigma^2) dt
     """
-    x = (x - average) / sqrt(2.) / sigma
+    x = (x - average) / np.sqrt(2.) / sigma
     return (erf(x) - erf(x[0])) * .5
 
 
@@ -997,11 +987,11 @@ def inv_gauss_int(p):
         print('Wrong value for p(', p, ')!')
         sys.exit()
     step = .00001
-    xn = arange(0., 4. + step, step)
-    gn = 1. / sqrt(2. * pi) * exp(old_div(-xn**2, 2.))
-    cgn = add.accumulate(gn) * step
+    xn = np.arange(0., 4. + step, step)
+    gn = 1. / np.sqrt(2. * pi) * np.exp(old_div(-xn**2, 2.))
+    cgn = np.add.accumulate(gn) * step
     p = old_div(p, 2.)
-    ind = searchsorted(cgn, p)
+    ind = np.searchsorted(cgn, p)
     return xn[ind]
 
 
@@ -1051,11 +1041,11 @@ def mark_outliers(x, n_sigma=3., n=5):  # --DC
     nx = len(x)
     ii = list(range(nx))
     for i in range(n):
-        med = median(x)
-        rms = std(x)
-        ii, x = compress(less_equal(abs(x - med), n_sigma * rms), (ii, x))
-    outliers = ones(nx)
-    put(outliers, ii.astype(int), 0)
+        med = np.median(x)
+        rms = np.std(x)
+        ii, x = np.compress(np.less_equal(abs(x - med), n_sigma * rms), (ii, x))
+    outliers = np.ones(nx)
+    np.put(outliers, ii.astype(int), 0)
     return outliers
 
 
@@ -1065,16 +1055,16 @@ def mark_faroutliers(x, n_sigma=3., n=5, n_farout=2):  # --DC
     nx = len(x)
     xg = x[:]
     for i in range(n):
-        dx = abs(x - median(x))
-        outliers = greater(dx, n_sigma * std(xg))
-        xg = compress(logical_not(outliers), x)
+        dx = abs(x - np.median(x))
+        outliers = np.greater(dx, n_sigma * np.std(xg))
+        xg = np.compress(np.logical_not(outliers), x)
         xglo, xghi = min(xg), max(xg)
         xgmed = old_div((xglo + xghi), 2.)
         xgrange = xghi - xglo
         n_out = old_div(abs(x - xgmed), xgrange) - 0.5
-        outliers = greater(n_out, n_farout)
+        outliers = np.greater(n_out, n_farout)
     n_out = old_div((x - xgmed), xgrange)
-    toolo = less(n_out + 0.5, -n_farout)
+    toolo = np.less(n_out + 0.5, -n_farout)
     outliers = outliers - 2 * toolo
     return outliers
 
@@ -1089,20 +1079,20 @@ def pointsrobust(x, y, limits=(None, None, None, None), title='Plot'):  # --DC
     p.add(Slope(0.))
     outliers = mark_faroutliers(y)
     if sum(outliers):
-        xg, yg = compress(logical_not(outliers), (x, y))
+        xg, yg = np.compress(np.logical_not(outliers), (x, y))
         p.add(Points(xg, yg))
         yglo, yghi = min(yg), max(yg)
-        toohi = greater(y, yghi)
-        toolo = less(y, yglo)
-        y = clip(y, yglo, yghi)
+        toohi = np.greater(y, yghi)
+        toolo = np.less(y, yglo)
+        y = np.clip(y, yglo, yghi)
         dy = old_div((yghi - yglo), 20.)
         if sum(toohi):
-            xohi, yohi = compress(toohi, (x, y))
+            xohi, yohi = np.compress(toohi, (x, y))
             for i in range(len(yohi)):
                 p.add(Curve([xohi[i], xohi[i]], [yohi[i], yohi[i] + dy]))
             p.add(Points(xohi, yohi + dy, type='half filled triangle'))
         if sum(toolo):
-            xolo, yolo = compress(toolo, (x, y))
+            xolo, yolo = np.compress(toolo, (x, y))
             for i in range(len(yolo)):
                 p.add(Curve([xolo[i], xolo[i]], [yolo[i], yolo[i] + dy]))
             p.add(Points(xolo, yolo - dy, type='half filled inverted triangle'))
@@ -1118,14 +1108,14 @@ class NumberCounts(object):
     def __init__(self, m, dm=1., mmin=10., mmax=35., area=1., xcor=None, ycor=None, type_cor='negative'):
         # xcor and ycor are corrections to the total number counts, e.g. area or incompleteness
         if mmin == 10. and mmax == 35.:
-            xm = arange(10., 35., dm)
-            imin = searchsorted(xm, min(m))
-            imax = searchsorted(xm, max(m))
+            xm = np.arange(10., 35., dm)
+            imin = np.searchsorted(xm, min(m))
+            imax = np.searchsorted(xm, max(m))
             self.xm = xm[imin - 1:imax]
             print('min(m),max(m)', min(m), max(m))
             print('self.xm[0],self.xm[-1]', self.xm[0], self.xm[-1])
         else:
-            self.xm = arange(mmin, mmax + dm, dm)
+            self.xm = np.arange(mmin, mmax + dm, dm)
 
         self.dnc = hist(m, self.xm)
         self.xm = self.xm + dm * 0.5
@@ -1133,23 +1123,23 @@ class NumberCounts(object):
         if xcor != None and ycor != None:
             if type_cor == 'negative':
                 self.dnc -= match_resol(xcor, ycor, self.xm)
-                self.dnc = clip(self.dnc, 0., 1e50)
+                self.dnc = np.clip(self.dnc, 0., 1e50)
             elif type_cor == 'positive':
                 self.dnc += match_resol(xcor, ycor, self.xm)
             elif type_cor == 'multiplicative':
                 self.dnc *= match_resol(xcor, ycor, self.xm)
 
-        self.cnc = add.accumulate(self.dnc)
+        self.cnc = np.add.accumulate(self.dnc)
         try:
-            self.ldnc = log10(self.dnc)
+            self.ldnc = np.log10(self.dnc)
         except:
             print('Differential numbers counts contains bins with zero galaxies')
             print('We set those values to 1e-1')
-            dnc = where(equal(self.dnc, 0.), 1e-2, self.dnc)
-            self.ldnc = log10(dnc)
+            dnc = np.where(np.equal(self.dnc, 0.), 1e-2, self.dnc)
+            self.ldnc = np.log10(dnc)
 
         try:
-            self.lcnc = log10(self.cnc)
+            self.lcnc = np.log10(self.cnc)
         except:
             print('Could not calculate log of cumulative numbers counts')
 
@@ -1163,24 +1153,24 @@ class lsq(object):
         except:
             dy = x * 0. + 1.
         dy2 = dy**2
-        s = add.reduce(old_div(1., dy2))
-        sx = add.reduce(old_div(x, dy2))
-        sy = add.reduce(old_div(y, dy2))
-        sxx = add.reduce(x * x / dy2)
-        sxy = add.reduce(x * y / dy2)
+        s = np.add.reduce(old_div(1., dy2))
+        sx = np.add.reduce(old_div(x, dy2))
+        sy = np.add.reduce(old_div(y, dy2))
+        sxx = np.add.reduce(x * x / dy2)
+        sxy = np.add.reduce(x * y / dy2)
         delta = s * sxx - sx * sx
         self.a = old_div((sxx * sy - sx * sxy), delta)
         self.b = old_div((s * sxy - sx * sy), delta)
-        self.da = sqrt(old_div(sxx, delta))
-        self.db = sqrt(old_div(s, delta))
+        self.da = np.sqrt(old_div(sxx, delta))
+        self.db = np.sqrt(old_div(s, delta))
 
     def fit(self, x):
         return self.b * x + self.a
 
 
 def rotation(x, y, angle):
-    xp = x * cos(angle) + y * sin(angle)
-    yp = -x * sin(angle) + y * cos(angle)
+    xp = x * np.cos(angle) + y * np.sin(angle)
+    yp = -x * np.sin(angle) + y * np.cos(angle)
     return xp, yp
 
 
@@ -1196,8 +1186,8 @@ def test():
     Testing("I/O FUNCTIONS")
 
     test = "put_str and get_str"
-    x = arange(100.)
-    y = list(map(str, sin(x)))
+    x = np.arange(100.)
+    y = list(map(str, np.sin(x)))
     x = list(map(str, x))
     put_str('test.txt', (x, y))
     xn, yn = get_str('test.txt', list(range(2)))
@@ -1208,13 +1198,13 @@ def test():
 
     test = 'put_data and get_data'
     Testing(test)
-    x = arange(100.)
-    y = sin(x)
+    x = np.arange(100.)
+    y = np.sin(x)
     put_data('test.dat', (x, y), 'header of test.dat', '%.18f %.18f')
     xn, yn = get_data('test.dat', list(range(2)))
-    if sometrue(not_equal(xn, x)):
+    if np.sometrue(np.not_equal(xn, x)):
         raise test
-    if sometrue(not_equal(yn, y)):
+    if np.sometrue(np.not_equal(yn, y)):
         raise test
 
     test = "put_header and get_header"
@@ -1240,21 +1230,21 @@ def test():
 
     test = 'put_2Darray and get_2Darray'
     Testing(test)
-    x = arange(200.)
-    y = reshape(x, (40, -1))
+    x = np.arange(200.)
+    y = np.reshape(x, (40, -1))
     put_2Darray('test.dat', y, 'header of test.dat')
     yn = get_2Darray('test.dat')
-    comp = not_equal(yn, y)
+    comp = np.not_equal(yn, y)
     for i in range(yn.shape[1]):
-        if sometrue(comp[:, i]):
+        if np.sometrue(comp[:, i]):
             raise test
 
     #Testing("MISC NUMERICAL FUNCTIONS")
 
     test = 'ascend'
     Testing(test)
-    y = sin(arange(100))
-    z = sort(y)
+    y = np.sin(np.arange(100))
+    z = np.sort(y)
     if not ascend(z):
         raise test
     z = z[::-1]
@@ -1263,37 +1253,37 @@ def test():
 
 #    test="hist"
 #    Testing(test)
-#    x=arange(0.,100.,.1)
-#    y=arange(100.)
+#    x=np.arange(0.,100.,.1)
+#    y=np.arange(100.)
 #    h=hist(x,y)
 #    points(h,ones(100)*10)
 #    if sometrue(not_equal(h,ones(100)*10)): raise test
 
     test = "bin_aver"
     Testing(test)
-    x = arange(0., 10.1, .1)
-    xb = arange(10.) + .01
+    x = np.arange(0., 10.1, .1)
+    xb = np.arange(10.) + .01
     y = x
     yb = bin_aver(x, y, xb) + .45
-    yr = arange(10) + 1.
-    if sometrue(greater_equal(yb - yr, 1e-10)):
+    yr = np.arange(10) + 1.
+    if np.sometrue(np.greater_equal(yb - yr, 1e-10)):
         raise test
 
     test = 'dist'
     Testing(test)
-    a = arange(0, 2. * pi, old_div(pi, 6.))
-    x = 10. * sin(a) + 3.
-    y = 5 * cos(a) - 3.
-    d = sqrt((((x - 3.)**2 + (y + 3.)**2)))
-    nd = list(map(dist, x, y, ones(len(x)) * 3., ones(len(x)) * -3.))
-    if sometrue(not_equal(d, nd)):
+    a = np.arange(0, 2. * pi, old_div(pi, 6.))
+    x = 10. * np.sin(a) + 3.
+    y = 5 * np.cos(a) - 3.
+    d = np.sqrt((((x - 3.)**2 + (y + 3.)**2)))
+    nd = list(map(dist, x, y, np.ones(len(x)) * 3., np.ones(len(x)) * -3.))
+    if np.sometrue(np.not_equal(d, nd)):
         print(d)
         print(nd)
         raise test
 
     test = "loc2d"
     Testing(test)
-    m = fromfunction(dist, (10, 10))
+    m = np.fromfunction(dist, (10, 10))
     if loc2d(m) != (9, 9):
         raise test
     if loc2d(m, 'min') != (0, 0):
@@ -1301,13 +1291,13 @@ def test():
 
     test = "match_objects"
     Testing(test)
-    x = arange(10.)
-    y = arange(10, 20.)
+    x = np.arange(10.)
+    y = np.arange(10, 20.)
     t1 = (list(map(str, x)), list(map(str, y)))
-    x = x + RandomArray.random(x.shape) * .707 / 2.
-    y = y + RandomArray.random(y.shape) * .707 / 2.
-    x0 = arange(10000.)
-    y0 = arange(10., 10010.)
+    x = x + np.random.random(x.shape) * .707 / 2.
+    y = y + np.random.random(y.shape) * .707 / 2.
+    x0 = np.arange(10000.)
+    y0 = np.arange(10., 10010.)
     t2 = (list(map(str, x0)), list(map(str, y0)))
     cosas1 = match_objects((x, y), (x0, y0), t1, t2, accuracy=.5)
     if not (cosas1[2] == cosas1[4] and cosas1[3] == cosas1[5]):
@@ -1315,13 +1305,13 @@ def test():
 
     test = "match_min"
     Testing(test)
-    x = arange(10.)
-    y = arange(10, 20.)
+    x = np.arange(10.)
+    y = np.arange(10, 20.)
     t1 = (list(map(str, x)), list(map(str, y)))
-    x = x + RandomArray.random(x.shape) * .707 / 2.
-    y = y + RandomArray.random(y.shape) * .707 / 2.
-    x0 = arange(10000.)
-    y0 = arange(10., 10010.)
+    x = x + np.random.random(x.shape) * .707 / 2.
+    y = y + np.random.random(y.shape) * .707 / 2.
+    x0 = np.arange(10000.)
+    y0 = np.arange(10., 10010.)
     t2 = (list(map(str, x0)), list(map(str, y0)))
     cosas1 = match_min((x, y), (x0, y0), t1, t2)
     # put_data('bobo',cosas1)
@@ -1331,11 +1321,11 @@ def test():
 
     test = "match_resol"
     Testing(test)
-    xobs = arange(0., 10., .33)
-    yobs = cos(xobs) * exp(-xobs)
-    xt = arange(0., 10., old_div(.33, 2.))
+    xobs = np.arange(0., 10., .33)
+    yobs = np.cos(xobs) * np.exp(-xobs)
+    xt = np.arange(0., 10., old_div(.33, 2.))
     yt = match_resol(xobs, yobs, xt)
-    ytobs = cos(xt) * exp(-xt)
+    ytobs = np.cos(xt) * np.exp(-xt)
     if plots:
         plot = FramedPlot()
         plot.add(Points(xobs, yobs, color="blue", type='cross'))
@@ -1351,13 +1341,13 @@ def test():
 
     test = "gauss_int"
     Testing(test)
-    x = arange(0., 3, .5)
+    x = np.arange(0., 3, .5)
     p = gauss_int(x)
-    pt = array(
+    pt = np.array(
         [0., .19146, .34134, .43319, .47725, .49379])
     diff = abs(p - pt)
     print(diff)
-    if sometrue(greater(diff, 2e-5)):
+    if np.sometrue(np.greater(diff, 2e-5)):
         raise test
 
     test = "inv_gauss_int"
