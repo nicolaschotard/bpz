@@ -5,33 +5,27 @@ from __future__ import absolute_import
 
 
 from past.utils import old_div
-from .coetools import *
-from . import MLab_coe	
+from . import coetools
+from . import MLab_coe
 import string
 
-try:
-    import pyfits 
-    pyfitsloaded = True
-except:
-    pyfitsloaded = False
+import pyfits
+#try:
+#    import pyfits
+#    pyfitsloaded = True
+#except:
+#    pyfitsloaded = False
 
-try:
-    import Image
-    from coeim import *
-except:
-    pass
-
-from os.path import exists, join
+import os
 import numpy as np
 
 
-if pyfitsloaded:
-    # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
-    pyfitsusesnumpy = (float(pyfits.__version__[:3]) >= 1.1) and (
-        numerix == 'numpy')
-    if not pyfitsusesnumpy:
-        print('You probably should have done this first: setenv NUMERIX numpy')
-        import numarray
+#if pyfitsloaded:
+#    # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
+#    pyfitsusesnumpy = (float(pyfits.__version__[:3]) >= 1.1) and (numerix == 'numpy')
+#    if not pyfitsusesnumpy:
+#        print('You probably should have done this first: setenv NUMERIX numpy')
+#        import numarray
 
 
 def recapfile(name, ext):
@@ -1123,9 +1117,9 @@ class VarsClass(object):
             labels = labels and self.labels  # if labels then self.labels, else 0
             collist = []
             for label in self.labels:
-                a = self.get(label)
-                if not pyfitsusesnumpy:
-                    a = numarray.array(a)
+                a = np.array(self.get(label))
+                #if not pyfitsusesnumpy:
+                #    a = numarray.array(a)
                 if label in list(units.keys()):
                     col = pyfits.Column(name=label, format=format.get(
                         label, 'E'), unit=units[label], array=a)
@@ -1299,10 +1293,10 @@ def loadfits(filename, dir="", index=0):
         # return pyfits.open(filename, memmap=1)[0].data
         data = pyfits.open(filename)[index].data
         # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
-        if not pyfitsusesnumpy:
-            data = np.array(data)  # .tolist() ??
-        return data
+        #if not pyfitsusesnumpy:
+        #data = np.array(data)  # .tolist() ??
+        return np.array(data)
     else:
         print()
         print(filename, "DOESN'T EXIST")
-        FILE_DOESNT_EXIST[9] = 3
+        # FILE_DOESNT_EXIST[9] = 3

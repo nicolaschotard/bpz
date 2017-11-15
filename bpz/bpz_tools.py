@@ -9,19 +9,18 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from past.utils import old_div
-from numpy import *
-from .MLab_coe import *
-from .useful import *
-from string import *
+import numpy as np
+from . import coetools
+from . import useful
 import os
-import sys
+# import biggles # for Points, FramedPlot and Curve plots
 
 clight_AHz = 2.99792458e18
 Vega = 'Vega_reference'
 
 # Smallest number accepted by python
 eps = 1e-300
-eeps = log(eps)
+eeps = np.log(eps)
 
 #from .MLab_coe import log10 as log10a
 
@@ -48,17 +47,17 @@ ab_dir = bpz_dir + 'AB/'
 
 def flux(xsr, ys, yr, ccd='yes', units='nu'):
     """ Flux of spectrum ys observed through response yr,
-        both defined on xsr 
+        both defined on xsr
         Both f_nu and f_lambda have to be defined over lambda
         If units=nu, it gives f_nu as the output
     """
     if ccd == 'yes':
         yr = yr * xsr
-    norm = trapz(yr, xsr)
-    f_l = old_div(trapz(ys * yr, xsr), norm)
+    norm = np.trapz(yr, xsr)
+    f_l = old_div(np.trapz(ys * yr, xsr), norm)
     if units == 'nu':
         # Pivotal wavelenght
-        lp = sqrt(old_div(norm, trapz(yr / xsr / xsr, xsr)))
+        lp = np.sqrt(old_div(norm, np.trapz(yr / xsr / xsr, xsr)))
         return f_l * lp**2 / clight_AHz
     else:
         return f_l
@@ -68,8 +67,8 @@ def pivotal_wl(filter, ccd='yes'):
     xr, yr = get_filter(filter)
     if ccd == 'yes':
         yr = yr * xr
-    norm = trapz(yr, xr)
-    return sqrt(old_div(norm, trapz(yr / xr / xr, xr)))
+    norm = np.trapz(yr, xr)
+    return np.sqrt(old_div(norm, np.trapz(yr / xr / xr, xr)))
 
 
 def filter_center(filter, ccd='yes'):
@@ -81,7 +80,7 @@ def filter_center(filter, ccd='yes'):
         yr = filter[1]
     if ccd == 'yes':
         yr = yr * xr
-    return old_div(trapz(yr * xr, xr), trapz(yr, xr))
+    return old_div(np.trapz(yr * xr, xr), np.trapz(yr, xr))
 
 
 def AB(flux):
@@ -119,34 +118,34 @@ def e_mag2frac(errmag):
 
 def etau_madau(wl, z):
     """
-    Madau 1995 extinction for a galaxy spectrum at redshift z 
+    Madau 1995 extinction for a galaxy spectrum at redshift z
     defined on a wavelenght grid wl
     """
     n = len(wl)
-    l = array([1216., 1026., 973., 950.])
+    l = np.array([1216., 1026., 973., 950.])
     xe = 1. + z
 
     # If all the spectrum is redder than (1+z)*wl_lyman_alfa
     if wl[0] > l[0] * xe:
-        return zeros(n) + 1.
+        return np.zeros(n) + 1.
 
     # Madau coefficients
-    c = array([3.6e-3, 1.7e-3, 1.2e-3, 9.3e-4])
+    c = np.array([3.6e-3, 1.7e-3, 1.2e-3, 9.3e-4])
     ll = 912.
     tau = wl * 0.
-    i1 = searchsorted(wl, ll)
+    i1 = np.searchsorted(wl, ll)
     i2 = n - 1
     # Lyman series absorption
     for i in range(len(l)):
-        i2 = searchsorted(wl[i1:i2], l[i] * xe)
+        i2 = np.searchsorted(wl[i1:i2], l[i] * xe)
         tau[i1:i2] = tau[i1:i2] + c[i] * (old_div(wl[i1:i2], l[i]))**3.46
 
     if ll * xe < wl[0]:
-        return exp(-tau)
+        return np.exp(-tau)
 
     # Photoelectric absorption
     xe = 1. + z
-    i2 = searchsorted(wl, ll * xe)
+    i2 = np.searchsorted(wl, ll * xe)
     xc = old_div(wl[i1:i2], ll)
     xc3 = xc**3
     tau[i1:i2] = tau[i1:i2] +\
@@ -155,10 +154,10 @@ def etau_madau(wl, z):
          - 0.7 * xc3 * (xc**(-1.32) - xe**(-1.32))
          - 0.023 * (xe**1.68 - xc**1.68))
 
-    tau = clip(tau, 0, 700)
-    return exp(-tau)
+    tau = np.clip(tau, 0, 700)
+    return np.exp(-tau)
     # if tau>700. : return 0.
-    # else: return exp(-tau)
+    # else: return np.exp(-tau)
 
 
 def etau(wl, z):
@@ -168,16 +167,16 @@ def etau(wl, z):
     """
 
     n = len(wl)
-    l = array([1216., 1026., 973., 950.])
+    l = np.array([1216., 1026., 973., 950.])
     xe = 1. + z
 
     # If all the spectrum is redder than (1+z)*wl_lyman_alfa
     if wl[0] > l[0] * xe:
-        return zeros(n) + 1.
+        return np.zeros(n) + 1.
 
     # Extinction coefficients
 
-    c = array([1., 0.47, 0.33, 0.26])
+    c = np.array([1., 0.47, 0.33, 0.26])
     if z > 4.:
         # Numbers from Madau paper
         coeff = 0.0036
@@ -194,20 +193,20 @@ def etau(wl, z):
 
     ll = 912.
     tau = wl * 0.
-    i1 = searchsorted(wl, ll)
+    i1 = np.searchsorted(wl, ll)
     i2 = n - 1
     # Lyman series absorption
     for i in range(len(l)):
-        i2 = searchsorted(wl[i1:i2], l[i] * xe)
+        i2 = np.searchsorted(wl[i1:i2], l[i] * xe)
         tau[i1:i2] = tau[i1:i2] + c[i] * \
             (old_div(wl[i1:i2], l[i]))**(1. + gamma)
 
     if ll * xe < wl[0]:
-        return exp(-tau)
+        return np.exp(-tau)
 
     # Photoelectric absorption
     xe = 1. + z
-    i2 = searchsorted(wl, ll * xe)
+    i2 = np.searchsorted(wl, ll * xe)
     xc = old_div(wl[i1:i2], ll)
     xc3 = xc**3
     tau[i1:i2] = tau[i1:i2] +\
@@ -215,7 +214,7 @@ def etau(wl, z):
          + 9.4 * xc**1.5 * (xe**0.18 - xc**0.18)
          - 0.7 * xc3 * (xc**(-1.32) - xe**(-1.32))
          - 0.023 * (xe**1.68 - xc**1.68))
-    return exp(-tau)
+    return np.exp(-tau)
 
 
 def get_sednfilter(sed, filter):
@@ -233,28 +232,28 @@ def get_sednfilter(sed, filter):
     sed = sed_dir + sed
     filter = fil_dir + filter
     # Get the data
-    x_sed, y_sed = get_data(sed, list(range(2)))
+    x_sed, y_sed = useful.get_data(sed, list(range(2)))
     nsed = len(x_sed)
-    x_res, y_res = get_data(filter, list(range(2)))
+    x_res, y_res = useful.get_data(filter, list(range(2)))
     nres = len(x_res)
-    if not ascend(x_sed):
+    if not useful.ascend(x_sed):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % sed)
         print('They should start with the shortest lambda and end with the longest')
-    if not ascend(x_res):
+    if not useful.ascend(x_res):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % filter)
         print('They should start with the shortest lambda and end with the longest')
 
     # Define the limits of interest in wavelenght
-    i1 = searchsorted(x_sed, x_res[0]) - 1
-    i1 = maximum(i1, 0)
-    i2 = searchsorted(x_sed, x_res[nres - 1]) + 1
-    i2 = minimum(i2, nsed - 1)
-    r = match_resol(x_res, y_res, x_sed[i1:i2])
-    r = where(less(r, 0.), 0., r)  # Transmission must be >=0
+    i1 = np.searchsorted(x_sed, x_res[0]) - 1
+    i1 = np.maximum(i1, 0)
+    i2 = np.searchsorted(x_sed, x_res[nres - 1]) + 1
+    i2 = np.minimum(i2, nsed - 1)
+    r = useful.match_resol(x_res, y_res, x_sed[i1:i2])
+    r = np.where(np.less(r, 0.), 0., r)  # Transmission must be >=0
     return x_sed[i1:i2], y_sed[i1:i2], r
 
 
@@ -268,8 +267,8 @@ def get_sed(sed):
         sed = sed + '.sed'
     sed = sed_dir + sed
     # Get the data
-    x, y = get_data(sed, list(range(2)))
-    if not ascend(x):
+    x, y = useful.get_data(sed, list(range(2)))
+    if not useful.ascend(x):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % sed)
@@ -287,8 +286,8 @@ def get_filter(filter):
         filter = filter + '.res'
     filter = fil_dir + filter
     # Get the data
-    x, y = get_data(filter, list(range(2)))
-    if not ascend(x):
+    x, y = useful.get_data(filter, list(range(2)))
+    if not useful.ascend(x):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % filter)
@@ -297,16 +296,15 @@ def get_filter(filter):
 
 
 def redshift(wl, flux, z):
-    """ Redshift spectrum y defined on axis x 
-      to redshift z
+    """Redshift spectrum y defined on axis x to redshift z
       Usage:
-         y_z=redshift(wl,flux,z) 
+         y_z=redshift(wl,flux,z)
     """
     if z == 0.:
         return flux
     else:
-        f = match_resol(wl, flux, old_div(wl, (1. + z)))
-        return where(less(f, 0.), 0., f)
+        f = useful.match_resol(wl, flux, old_div(wl, (1. + z)))
+        return np.where(np.less(f, 0.), 0., f)
 
 
 def obs_spectrum(sed, z, madau=1):
@@ -316,23 +314,23 @@ def obs_spectrum(sed, z, madau=1):
         sed = sed + '.sed'
     sed = sed_dir + sed
     # Get the data
-    x_sed, y_sed = get_data(sed, list(range(2)))
+    x_sed, y_sed = useful.get_data(sed, list(range(2)))
     # ys_z will be the redshifted and corrected spectrum
-    ys_z = match_resol(x_sed, y_sed, old_div(x_sed, (1. + z)))
+    ys_z = useful.match_resol(x_sed, y_sed, old_div(x_sed, (1. + z)))
     if madau:
         ys_z = etau_madau(x_sed, z) * ys_z
     return x_sed, ys_z
 
 
-def f_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
+def f_z_sed(sed, filter, z=np.array([0.]), ccd='yes', units='lambda', madau='yes'):
     """
-    Returns array f with f_lambda(z) or f_nu(z) through a given filter 
-    Takes into account intergalactic extinction. 
-    Flux normalization at each redshift is arbitrary 
+    Returns array f with f_lambda(z) or f_nu(z) through a given filter
+    Takes into account intergalactic extinction.
+    Flux normalization at each redshift is arbitrary
     """
 
     if type(z) == type(0.):
-        z = array([z])
+        z = np.array([z])
 
     # Figure out the correct names
     if sed[-4:] != '.sed':
@@ -343,19 +341,19 @@ def f_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
     filter = fil_dir + filter
 
     # Get the data
-    x_sed, y_sed = get_data(sed, list(range(2)))
+    x_sed, y_sed = useful.get_data(sed, list(range(2)))
     nsed = len(x_sed)
-    x_res, y_res = get_data(filter, list(range(2)))
+    x_res, y_res = useful.get_data(filter, list(range(2)))
     nres = len(x_res)
 
-    if not ascend(x_sed):
+    if not useful.ascend(x_sed):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % sed)
         print('They should start with the shortest lambda and end with the longest')
         print('This will probably crash the program')
 
-    if not ascend(x_res):
+    if not useful.ascend(x_res):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % filter)
@@ -366,18 +364,18 @@ def f_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
         print('Extrapolating the spectrum')
         # Linear extrapolation of the flux using the last 4 points
         d_extrap = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
-        x_extrap = arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
-        extrap = lsq(x_sed[-5:], y_sed[-5:])
+        x_extrap = np.arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
+        extrap = useful.lsq(x_sed[-5:], y_sed[-5:])
         y_extrap = extrap.fit(x_extrap)
-        y_extrap = clip(y_extrap, 0., max(y_sed[-5:]))
-        x_sed = concatenate((x_sed, x_extrap))
-        y_sed = concatenate((y_sed, y_extrap))
+        y_extrap = np.clip(y_extrap, 0., max(y_sed[-5:]))
+        x_sed = np.concatenate((x_sed, x_extrap))
+        y_sed = np.concatenate((y_sed, y_extrap))
 
     # Wavelenght range of interest as a function of z
     wl_1 = old_div(x_res[0], (1. + z))
     wl_2 = old_div(x_res[-1], (1. + z))
-    n1 = clip(searchsorted(x_sed, wl_1) - 1, 0, 100000)
-    n2 = clip(searchsorted(x_sed, wl_2) + 1, 0, nsed - 1)
+    n1 = np.clip(np.searchsorted(x_sed, wl_1) - 1, 0, 100000)
+    n2 = np.clip(np.searchsorted(x_sed, wl_2) + 1, 0, nsed - 1)
 
     # Typical delta lambda
     delta_sed = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
@@ -385,33 +383,33 @@ def f_z_sed(sed, filter, z=array([0.]), ccd='yes', units='lambda', madau='yes'):
 
     # Change resolution of filter
     if delta_res > delta_sed:
-        x_r = arange(x_res[0], x_res[-1] + delta_sed, delta_sed)
+        x_r = np.arange(x_res[0], x_res[-1] + delta_sed, delta_sed)
         # print 'Changing filter resolution from %.2f AA to %.2f AA' % (delta_res,delta_sed)
-        r = match_resol(x_res, y_res, x_r)
-        r = where(less(r, 0.), 0., r)  # Transmission must be >=0
+        r = useful.match_resol(x_res, y_res, x_r)
+        r = np.where(np.less(r, 0.), 0., r)  # Transmission must be >=0
     else:
         x_r, r = x_res, y_res
 
     # Operations necessary for normalization and ccd effects
     if ccd == 'yes':
         r = r * x_r
-    norm_r = trapz(r, x_r)
+    norm_r = np.trapz(r, x_r)
     if units == 'nu':
-        const = norm_r / trapz(r / x_r / x_r, x_r) / clight_AHz
+        const = norm_r / np.trapz(r / x_r / x_r, x_r) / clight_AHz
     else:
         const = 1.
 
     const = old_div(const, norm_r)
 
     nz = len(z)
-    f = zeros(nz) * 1.
+    f = np.zeros(nz) * 1.
     for i in range(nz):
         i1, i2 = n1[i], n2[i]
-        ys_z = match_resol(x_sed[i1:i2], y_sed[i1:i2],
+        ys_z = useful.match_resol(x_sed[i1:i2], y_sed[i1:i2],
                            old_div(x_r, (1. + z[i])))
         if madau != 'no':
             ys_z = etau_madau(x_r, z[i]) * ys_z
-        f[i] = trapz(ys_z * r, x_r) * const
+        f[i] = np.trapz(ys_z * r, x_r) * const
     if nz == 1:
         return f[0]
     else:
@@ -432,7 +430,7 @@ def ABflux(sed, filter, madau='yes'):
     units = 'nu'
     madau = madau
     # zmax_ab and dz_ab are def. in bpz_tools
-    z_ab = arange(0., zmax_ab, dz_ab)
+    z_ab = np.arange(0., zmax_ab, dz_ab)
 
     # Figure out the correct names
     if sed[-4:] != '.sed':
@@ -443,19 +441,19 @@ def ABflux(sed, filter, madau='yes'):
     filter = fil_dir + filter
 
     # Get the data
-    x_sed, y_sed = get_data(sed, list(range(2)))
+    x_sed, y_sed = useful.get_data(sed, list(range(2)))
     nsed = len(x_sed)
-    x_res, y_res = get_data(filter, list(range(2)))
+    x_res, y_res = useful.get_data(filter, list(range(2)))
     nres = len(x_res)
 
-    if not ascend(x_sed):
+    if not useful.ascend(x_sed):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % sed)
         print('They should start with the shortest lambda and end with the longest')
         print('This will probably crash the program')
 
-    if not ascend(x_res):
+    if not useful.ascend(x_res):
         print()
         print('Warning!!!')
         print('The wavelenghts in %s are not properly ordered' % filter)
@@ -466,20 +464,20 @@ def ABflux(sed, filter, madau='yes'):
         print('Extrapolating the spectrum')
         # Linear extrapolation of the flux using the last 4 points
         d_extrap = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
-        x_extrap = arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
-        extrap = lsq(x_sed[-5:], y_sed[-5:])
+        x_extrap = np.arange(x_sed[-1] + d_extrap, x_res[-1] + d_extrap, d_extrap)
+        extrap = useful.lsq(x_sed[-5:], y_sed[-5:])
         y_extrap = extrap.fit(x_extrap)
-        y_extrap = clip(y_extrap, 0., max(y_sed[-5:]))
-        x_sed = concatenate((x_sed, x_extrap))
-        y_sed = concatenate((y_sed, y_extrap))
+        y_extrap = np.clip(y_extrap, 0., max(y_sed[-5:]))
+        x_sed = np.concatenate((x_sed, x_extrap))
+        y_sed = np.concatenate((y_sed, y_extrap))
 
     # Wavelenght range of interest as a function of z_ab
     wl_1 = old_div(x_res[0], (1. + z_ab))
     wl_2 = old_div(x_res[-1], (1. + z_ab))
     print('x_res[0]', x_res[0])
     print('x_res[-1]', x_res[-1])
-    n1 = clip(searchsorted(x_sed, wl_1) - 1, 0, 100000)
-    n2 = clip(searchsorted(x_sed, wl_2) + 1, 0, nsed - 1)
+    n1 = np.clip(np.searchsorted(x_sed, wl_1) - 1, 0, 100000)
+    n2 = np.clip(np.searchsorted(x_sed, wl_2) + 1, 0, nsed - 1)
 
     # Typical delta lambda
     delta_sed = old_div((x_sed[-1] - x_sed[0]), len(x_sed))
@@ -487,31 +485,31 @@ def ABflux(sed, filter, madau='yes'):
 
     # Change resolution of filter
     if delta_res > delta_sed:
-        x_r = arange(x_res[0], x_res[-1] + delta_sed, delta_sed)
+        x_r = np.arange(x_res[0], x_res[-1] + delta_sed, delta_sed)
         print('Changing filter resolution from %.2f AA to %.2f' %
               (delta_res, delta_sed))
-        r = match_resol(x_res, y_res, x_r)
-        r = where(less(r, 0.), 0., r)  # Transmission must be >=0
+        r = useful.match_resol(x_res, y_res, x_r)
+        r = np.where(np.less(r, 0.), 0., r)  # Transmission must be >=0
     else:
         x_r, r = x_res, y_res
 
     # Operations necessary for normalization and ccd effects
     if ccd == 'yes':
         r = r * x_r
-    norm_r = trapz(r, x_r)
+    norm_r = np.trapz(r, x_r)
     if units == 'nu':
-        const = norm_r / trapz(r / x_r / x_r, x_r) / clight_AHz
+        const = norm_r / np.trapz(r / x_r / x_r, x_r) / clight_AHz
     else:
         const = 1.
 
     const = old_div(const, norm_r)
 
     nz_ab = len(z_ab)
-    f = zeros(nz_ab) * 1.
+    f = np.zeros(nz_ab) * 1.
     for i in range(nz_ab):
         i1, i2 = n1[i], n2[i]
-        # if (x_sed[i1] > max(x_r/(1.+z_ab[i]))) or (x_sed[i2] < min(x_r/(1.+z_ab[i]))):
-        if (x_sed[i1] > old_div(x_r[-1], (1. + z_ab[i]))) or (x_sed[i2 - 1] < old_div(x_r[0], (1. + z_ab[i]))) or (i2 - i1 < 2):
+        if (x_sed[i1] > old_div(x_r[-1], (1. + z_ab[i]))) or \
+           (x_sed[i2 - 1] < old_div(x_r[0], (1. + z_ab[i]))) or (i2 - i1 < 2):
             print('bpz_tools.ABflux:')
             print("YOUR FILTER RANGE DOESN'T OVERLAP AT ALL WITH THE REDSHIFTED TEMPLATE")
             print("THIS REDSHIFT IS OFF LIMITS TO YOU:")
@@ -523,10 +521,9 @@ def ABflux(sed, filter, madau='yes'):
                   max(old_div(x_r, (1. + z_ab[i]))))
             # NOTE: x_sed[i1:i2] NEEDS TO COVER x_r(1.+z_ab[i])
             # IF THEY DON'T OVERLAP AT ALL, THE PROGRAM WILL CRASH
-            # sys.exit(1)
         else:
             try:
-                ys_z = match_resol(
+                ys_z = useful.match_resol(
                     x_sed[i1:i2], y_sed[i1:i2], old_div(x_r, (1. + z_ab[i])))
             except:
                 print(i1, i2)
@@ -538,16 +535,16 @@ def ABflux(sed, filter, madau='yes'):
                       old_div(x_r[-2], (1. + z_ab[i])))
                 print(x_sed[i1:i2])
                 print(old_div(x_r, (1. + z_ab[i])))
-                pause()
+                coetools.pause()
             if madau != 'no':
                 ys_z = etau_madau(x_r, z_ab[i]) * ys_z
-            f[i] = trapz(ys_z * r, x_r) * const
+            f[i] = np.trapz(ys_z * r, x_r) * const
 
     ABoutput = ab_dir + \
-        split(sed, '/')[-1][:-4] + '.' + split(filter, '/')[-1][:-4] + '.AB'
+        sed.split('/')[-1][:-4] + '.' + filter.split('/')[-1][:-4] + '.AB'
 
     print('Writing AB file ', ABoutput)
-    put_data(ABoutput, (z_ab, f))
+    useful.put_data(ABoutput, (z_ab, f))
 
 
 def VegatoAB(m_vega, filter, Vega=Vega):
@@ -563,7 +560,7 @@ def ABtoVega(m_ab, filter, Vega=Vega):
 
 
 def likelihood(f, ef, ft_z):
-    """ 
+    """
     Usage: ps[:nz,:nt]=likelihood(f[:nf],ef[:nf],ft_z[:nz,:nt,:nf])
     """
     global minchi2
@@ -571,26 +568,26 @@ def likelihood(f, ef, ft_z):
     nz = axis[0]
     nt = axis[1]
 
-    chi2 = zeros((nz, nt), float)
-    ftt = zeros((nz, nt), float)
-    fgt = zeros((nz, nt), float)
+    chi2 = np.zeros((nz, nt), float)
+    ftt = np.zeros((nz, nt), float)
+    fgt = np.zeros((nz, nt), float)
 
     ief2 = old_div(1., (ef * ef))
-    fgg = add.reduce(f * f * ief2)
+    fgg = np.add.reduce(f * f * ief2)
     factor = ft_z[:nz, :nt, :] * ief2
 
-    ftt[:nz, :nt] = add.reduce(ft_z[:nz, :nt, :] * factor, -1)
-    fgt[:nz, :nt] = add.reduce(f[:] * factor, -1)
-    chi2[:nz, :nt] = fgg - old_div(power(fgt[:nz, :nt], 2), ftt[:nz, :nt])
+    ftt[:nz, :nt] = np.add.reduce(ft_z[:nz, :nt, :] * factor, -1)
+    fgt[:nz, :nt] = np.add.reduce(f[:] * factor, -1)
+    chi2[:nz, :nt] = fgg - old_div(np.power(fgt[:nz, :nt], 2), ftt[:nz, :nt])
 
     min_chi2 = min(chi2)
     minchi2 = min(min_chi2)
 #   chi2=chi2-minchi2
-    chi2 = clip(chi2, 0., -2. * eeps)
+    chi2 = np.clip(chi2, 0., -2. * eeps)
 
-    p = where(greater_equal(chi2, -2. * eeps), 0., exp(old_div(-chi2, 2.)))
+    p = np.where(np.greater_equal(chi2, -2. * eeps), 0., np.exp(old_div(-chi2, 2.)))
 
-    norm = add.reduce(add.reduce(p))
+    norm = np.add.reduce(np.add.reduce(p))
     return old_div(p, norm)
 
 
@@ -600,76 +597,76 @@ class p_c_z_t(object):
         # Get true minimum of the input data (excluding zero values)
 
         # Define likelihood quantities taking into account non-observed objects
-        self.foo = add.reduce(
-            where(less(old_div(f, ef), 1e-4), 0., (old_div(f, ef))**2))
+        self.foo = np.add.reduce(
+            np.where(np.less(old_div(f, ef), 1e-4), 0., (old_div(f, ef))**2))
         # Above was wrong: non-detections were ignored as non-observed --DC
-        nonobs = greater(reshape(ef, (1, 1, self.nf)) + ft_z * 0., 1.0)
-        self.fot = add.reduce(
+        nonobs = np.greater(np.reshape(ef, (1, 1, self.nf)) + ft_z * 0., 1.0)
+        self.fot = np.add.reduce(
             # where(nonobs,0.,f[NewAxis,NewAxis,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2)
-            where(nonobs, 0., reshape(f, (1, 1, self.nf)) * ft_z / reshape(ef, (1, 1, self.nf))**2), -1)
-        self.ftt = add.reduce(
+            np.where(nonobs, 0., np.reshape(f, (1, 1, self.nf)) * ft_z / \
+                     np.reshape(ef, (1, 1, self.nf))**2), -1)
+        self.ftt = np.add.reduce(
             # where(nonobs,0.,ft_z[:,:,:]*ft_z[:,:,:]/ef[NewAxis,NewAxis,:]**2)
-            where(nonobs, 0., old_div(ft_z**2, reshape(ef, (1, 1, self.nf))**2)), -1)
+            np.where(nonobs, 0., old_div(ft_z**2, np.reshape(ef, (1, 1, self.nf))**2)), -1)
 
         # Define chi2 adding eps to the ftt denominator to avoid overflows
-        self.chi2 = where(equal(self.ftt, 0.),
-                          self.foo,
-                          self.foo - old_div((self.fot**2), (self.ftt + eps)))
-        self.chi2_minima = loc2d(self.chi2[:self.nz, :self.nt], 'min')
+        self.chi2 = np.where(np.equal(self.ftt, 0.), self.foo,
+                             self.foo - old_div((self.fot**2), (self.ftt + eps)))
+        self.chi2_minima = useful.loc2d(self.chi2[:self.nz, :self.nt], 'min')
         self.i_z_ml = self.chi2_minima[0]
         self.i_t_ml = self.chi2_minima[1]
         self.min_chi2 = self.chi2[self.i_z_ml, self.i_t_ml]
-        self.likelihood = exp(-0.5 *
-                              clip((self.chi2 - self.min_chi2), 0., -2 * eeps))
-        # self.likelihood=where(equal(self.chi2,1400.),0.,self.likelihood)
+        self.likelihood = np.exp(-0.5 *
+                              np.clip((self.chi2 - self.min_chi2), 0., -2 * eeps))
+        # self.likelihood=np.where(np.equal(self.chi2,1400.),0.,self.likelihood)
 
         # Now we add the Bayesian f_tt^-1/2 multiplicative factor to the exponential
         #(we don't multiply it by 0.5 since it is done below together with the chi^2
         # To deal with zero values of ftt we again add an epsilon value.
-        self.expo = where(
-            equal(self.ftt, 0.),
+        self.expo = np.where(
+            np.equal(self.ftt, 0.),
             self.chi2,
-            self.chi2 + log(self.ftt + eps)
+            self.chi2 + np.log(self.ftt + eps)
         )
         # Renormalize the exponent to preserve dynamical range
-        self.expo_minima = loc2d(self.expo, 'min')
+        self.expo_minima = useful.loc2d(self.expo, 'min')
         self.min_expo = self.expo[self.expo_minima[0], self.expo_minima[1]]
         self.expo -= self.min_expo
-        self.expo = clip(self.expo, 0., -2. * eeps)
+        self.expo = np.clip(self.expo, 0., -2. * eeps)
         # Clip very low values of the probability
-        self.Bayes_likelihood = where(
-            equal(self.expo, -2. * eeps),
+        self.Bayes_likelihood = np.where(
+            np.equal(self.expo, -2. * eeps),
             0.,
-            exp(-0.5 * self.expo))
+            np.exp(-0.5 * self.expo))
 
     def bayes_likelihood(self):
         return self.Bayes_likelihood
 
     def various_plots(self):
         # Normalize and collapse likelihoods (without prior)
-        norm = add.reduce(add.reduce(self.Bayes_likelihood))
-        bl = add.reduce(old_div(self.Bayes_likelihood, norm), -1)
-        norm = add.reduce(add.reduce(self.likelihood))
-        l = add.reduce(old_div(self.likelihood, norm), -1)
+        norm = np.add.reduce(np.add.reduce(self.Bayes_likelihood))
+        bl = np.add.reduce(old_div(self.Bayes_likelihood, norm), -1)
+        norm = np.add.reduce(np.add.reduce(self.likelihood))
+        l = np.add.reduce(old_div(self.likelihood, norm), -1)
         plo = FramedPlot()
-        plo.add(Curve(arange(self.nz), bl, color='blue'))
-        plo.add(Curve(arange(self.nz), l, color='red'))
+        plo.np.add(Curve(np.arange(self.nz), bl, color='blue'))
+        plo.np.add(Curve(np.arange(self.nz), l, color='red'))
         plo.show()
-        ask('More?')
+        useful.ask('More?')
 
 
 class p_c_z_t_color(object):
     def __init__(self, f, ef, ft_z):
         self.nz, self.nt, self.nf = ft_z.shape
-        self.chi2 = add.reduce(
-            #((f[NewAxis,NewAxis,:]-ft_z[:,:,:])/ef[NewAxis,NewAxis,:])**2
-            (old_div((reshape(f, (1, 1, self.nf)) - ft_z), reshape(ef, (1, 1, self.nf))))**2, -1)
-        self.chi2_minima = loc2d(self.chi2[:self.nz, :self.nt], 'min')
+        self.chi2 = np.add.reduce(
+            (old_div((np.reshape(f, (1, 1, self.nf)) - ft_z),
+                     np.reshape(ef, (1, 1, self.nf))))**2, -1)
+        self.chi2_minima = useful.loc2d(self.chi2[:self.nz, :self.nt], 'min')
         self.i_z_ml = self.chi2_minima[0]
         self.i_t_ml = self.chi2_minima[1]
         self.min_chi2 = self.chi2[self.i_z_ml, self.i_t_ml]
-        self.likelihood = exp(-0.5 *
-                              clip((self.chi2 - self.min_chi2), 0., 1400.))
+        self.likelihood = np.exp(-0.5 *
+                                 np.clip((self.chi2 - self.min_chi2), 0., 1400.))
 
     def bayes_likelihood(self):
         return self.likelihood
@@ -687,7 +684,7 @@ def prior(z, m, info='hdfn', nt=6, ninterp=0, x=None, y=None):
     m_step = 0.1
     # number of decimals kept
     accuracy = str(len(str(int(old_div(1., m_step)))) - 1)
-    exec('from .prior_%s import *' % info)
+    # exec('from .prior_%s import function' % info)
     from . import prior_hdfn_gen
     global prior_dict
     try:
@@ -713,11 +710,11 @@ def prior(z, m, info='hdfn', nt=6, ninterp=0, x=None, y=None):
             nz = pp_i.shape[0]
             nt = pp_i.shape[1]
             nti = nt + (nt - 1) * int(ninterp)
-            tipos = arange(nt) * 1.
-            itipos = arange(nti) * 1. / (1. + float(ninterp))
-            buffer = zeros((nz, nti)) * 1.
+            tipos = np.arange(nt) * 1.
+            itipos = np.arange(nti) * 1. / (1. + float(ninterp))
+            buffer = np.zeros((nz, nti)) * 1.
             for iz in range(nz):
-                buffer[iz, :] = match_resol(tipos, pp_i[iz, :], itipos)
+                buffer[iz, :] = useful.match_resol(tipos, pp_i[iz, :], itipos)
             prior_dict[m_dict] = buffer
     return prior_dict[m_dict]
 
@@ -729,22 +726,22 @@ def interval(p, x, ci=.99):
     """
     q1 = old_div((1. - ci), 2.)
     q2 = 1. - q1
-    cp = add.accumulate(p)
+    cp = np.add.accumulate(p)
     if cp[-1] != 1.:
         cp = old_div(cp, cp[-1])
-    i1 = searchsorted(cp, q1) - 1
-    i2 = searchsorted(cp, q2)
-    i2 = minimum(i2, len(p) - 1)
-    i1 = maximum(i1, 0)
+    i1 = np.searchsorted(cp, q1) - 1
+    i2 = np.searchsorted(cp, q2)
+    i2 = np.minimum(i2, len(p) - 1)
+    i1 = np.maximum(i1, 0)
     return x[i1], x[i2]
 
 
 def odds(p, x, x1, x2):
     """Estimate the fraction of the total probability p(x)
     enclosed by the interval x1,x2"""
-    cp = add.accumulate(p)
-    i1 = searchsorted(x, x1) - 1
-    i2 = searchsorted(x, x2)
+    cp = np.add.accumulate(p)
+    i1 = np.searchsorted(x, x1) - 1
+    i2 = np.searchsorted(x, x2)
     if i1 < 0:
         return old_div(cp[i2], cp[-1])
     if i2 > len(x) - 1:
@@ -757,25 +754,25 @@ class p_bayes(object):
     # when the option -PROBS_LITE is on
     def __init__(self, file):
         self.file = file
-        dummy = get_2Darray(file)
+        dummy = useful.get_2Darray(file)
         self.id_list = list(map(int, list(dummy[:, 0])))
         self.p = dummy[:, 1:]
         del(dummy)
-        header = get_header(file)
-        header = split(header, '(')[2]
-        header = split(header, ')')[0]
-        zmin, zmax, dz = list(map(float, tuple(split(header, ','))))
-        self.z = arange(zmin, zmax, dz)
+        header = useful.get_header(file)
+        header = header.split('(')[2]
+        header = header.split(')')[0]
+        zmin, zmax, dz = list(map(float, tuple(header.split(','))))
+        self.z = np.arange(zmin, zmax, dz)
 
     def plot_p(self, id, limits=None):
         if type(id) != type((1,)):
             try:
                 j = self.id_list.index(int(id))
                 p_j = self.p[j, :]
-                if limits == None:
-                    connect(self.z, p_j)
+                if limits is None:
+                    useful.connect(self.z, p_j)
                 else:
-                    connect(self.z, p_j, limits)
+                    useful.connect(self.z, p_j, limits)
             except:
                 print('Object %i not in the file %s' % (id, self.file))
             self.prob = old_div(p_j, max(p_j))
@@ -784,7 +781,7 @@ class p_bayes(object):
             p.frame1.draw_grid = 1
             pall = self.p[0, :] * 0. + 1.
             pmax = 0.
-            if limits != None:
+            if limits is not None:
                 p.xrange = limits[0], limits[1]
                 p.yrange = limits[2], limits[3]
             for i in id:
@@ -802,13 +799,13 @@ class p_bayes(object):
             self.prob = old_div(pall, max(pall))
 
     def maxima(self, limits=(0., 6.5)):
-        g = greater_equal(self.z, limits[0]) * less_equal(self.z, limits[1])
-        z, p = multicompress(g, (self.z, self.prob))
-        imax = argmax(p)
-        xp = add.accumulate(p)
+        g = np.greater_equal(self.z, limits[0]) * np.less_equal(self.z, limits[1])
+        z, p = useful.multicompress(g, (self.z, self.prob))
+        imax = np.argmax(p)
+        xp = np.add.accumulate(p)
         xp /= xp[-1]
-        self.q66 = match_resol(xp, z, array([0.17, 0.83]))
-        self.q90 = match_resol(xp, z, array([0.05, 0.95]))
+        self.q66 = useful.match_resol(xp, z, np.array([0.17, 0.83]))
+        self.q90 = useful.match_resol(xp, z, np.array([0.05, 0.95]))
         # print self.q66
         # print self.q90
         return z[imax]
@@ -820,10 +817,10 @@ def get_datasex(file, cols, purge=1, mag=(2, 99.), emag=(4, .44), flag=(24, 4), 
     """
       Usage:
       x,y,mag,emag=get_datasex('file.cat',(0,1,24,12))
-      If purge=1, the function returns the corresponding columns 
-      of a SExtractor output file, excluding those objects with 
+      If purge=1, the function returns the corresponding columns
+      of a SExtractor output file, excluding those objects with
       magnitude <mag[1], magnitude error <=emag[1] and flag <=flag[1]
-      mag[0],emag[0] and flag[0] indicate the columns listing 
+      mag[0],emag[0] and flag[0] indicate the columns listing
       these quantities in the file
       detcal: a detection image was used to create the catalog
       It will be used now to determine which objects are good.
@@ -835,15 +832,15 @@ def get_datasex(file, cols, purge=1, mag=(2, 99.), emag=(4, .44), flag=(24, 4), 
 
     if purge:
         if nvar > 1:
-            datos = get_2Darray(file, cols)
+            datos = useful.get_2Darray(file, cols)
         else:
-            datos = get_data(file, cols)
+            datos = useful.get_data(file, cols)
         if detcal == 'none':
             detcal = file
-        m, em, f = get_data(detcal, (mag[0], emag[0], flag[0]))
-        good = less_equal(f, flag[1]) * less_equal(em,
-                                                   emag[1]) * less(m, mag[1])
-        datos = compress(good, datos, 0)
+        m, em, f = useful.get_data(detcal, (mag[0], emag[0], flag[0]))
+        good = np.less_equal(f, flag[1]) * np.less_equal(em,
+                                                         emag[1]) * np.less(m, mag[1])
+        datos = np.compress(good, datos, 0)
         lista = []
         if nvar > 1:
             for i in range(datos.shape[1]):
@@ -852,7 +849,7 @@ def get_datasex(file, cols, purge=1, mag=(2, 99.), emag=(4, .44), flag=(24, 4), 
         else:
             return datos
     else:
-        return get_data(file, cols)
+        return useful.get_data(file, cols)
 
 
 class bpz_diagnosis(object):
@@ -860,7 +857,7 @@ class bpz_diagnosis(object):
                  columns=(1, 4, 5, 6, 9, 10)):
         # columns correspond to the positions of the variables z_b,odds,z_ml, z_s and m_0
         # in the bpz file
-        self.zb, self.tb, self.odds, self.zm, self.zs, self.mo = get_data(
+        self.zb, self.tb, self.odds, self.zm, self.zs, self.mo = useful.get_data(
             bpz_file, columns)
 
     def stats(self, type='rms',
@@ -870,41 +867,41 @@ class bpz_diagnosis(object):
               t_min=0, t_max=100,
               plots='yes',
               thr=.2):
-        good = greater_equal(self.mo, mo_min)
-        good *= less_equal(self.mo, mo_max)
-        good *= greater_equal(self.zs, zs_min)
-        good *= less_equal(self.zs, zs_max)
-        good *= greater_equal(self.tb, t_min)
-        good *= less_equal(self.tb, t_max)
+        good = np.greater_equal(self.mo, mo_min)
+        good *= np.less_equal(self.mo, mo_max)
+        good *= np.greater_equal(self.zs, zs_min)
+        good *= np.less_equal(self.zs, zs_max)
+        good *= np.greater_equal(self.tb, t_min)
+        good *= np.less_equal(self.tb, t_max)
         self.n_total = len(good)
-        self.good = good * greater_equal(self.odds, odds_min)
+        self.good = good * np.greater_equal(self.odds, odds_min)
         self.n_selected = sum(self.good)
-        self.d = compress(self.good, old_div(
+        self.d = np.compress(self.good, old_div(
             (self.zb - self.zs), (1. + self.zs)))
 
-        b = stat_robust(self.d, 3, 5)
+        b = useful.stat_robust(self.d, 3, 5)
         b.run()
         self.n_remaining = b.n_remaining
         self.n_outliers = b.n_outliers
         self.rms = b.rms
         self.med = b.median
-        self.std_log = std_log(self.d)
+        self.std_log = useful.std_log(self.d)
         if plots == 'yes':
-            # points(compress(self.good,self.zs),compress(self.good,self.zb),(0.,zs_max,0.,zs_max))
+            # points(np.compress(self.good,self.zs),np.compress(self.good,self.zb),(0.,zs_max,0.,zs_max))
             p = FramedPlot()
-            xmin = min(compress(self.good, self.zs))
-            xmax = max(compress(self.good, self.zs))
+            xmin = min(np.compress(self.good, self.zs))
+            xmax = max(np.compress(self.good, self.zs))
             print(xmin, xmax)
-            x = arange(xmin, xmax, .01)
+            x = np.arange(xmin, xmax, .01)
             p.add(Curve(x, x, width=3))
             p.add(Curve(x, x + 3. * self.rms * (1. + x), width=1))
             p.add(Curve(x, x - 3. * self.rms * (1. + x), width=1))
-            p.add(Points(compress(self.good, self.zs),
-                         compress(self.good, self.zb)))
+            p.add(Points(np.compress(self.good, self.zs),
+                         np.compress(self.good, self.zb)))
             p.xlabel = r"$z_{spec}$"
             p.ylabel = r"$z_b$"
             p.show()
-            if ask("save plot?"):
+            if useful.ask("save plot?"):
                 name = input("name?")
                 p.write_eps(name)
 
@@ -913,14 +910,14 @@ def test():
     """ Tests some functions defined in this module"""
 
     test = 'flux'
-    Testing(test)
+    useful.Testing(test)
 
-    x = arange(912., 10001., .1)
-    r = exp(-(x - 3500.)**2 / 2. / 200.**2)
-    f = 1. + sin(old_div(x, 100.))
+    x = np.arange(912., 10001., .1)
+    r = np.exp(-(x - 3500.)**2 / 2. / 200.**2)
+    f = 1. + np.sin(old_div(x, 100.))
 
-    e_ccd = old_div(add.reduce(f * r * x), add.reduce(r * x))
-    e_noccd = old_div(add.reduce(f * r), add.reduce(r))
+    e_ccd = old_div(np.add.reduce(f * r * x), np.add.reduce(r * x))
+    e_noccd = old_div(np.add.reduce(f * r), np.add.reduce(r))
 
     r_ccd = flux(x, f, r, ccd='yes', units='lambda')
     r_noccd = flux(x, f, r, ccd='no', units='lambda')
@@ -928,13 +925,13 @@ def test():
     if abs(1. - old_div(e_ccd, r_ccd)) > 1e-6 or abs(1. - old_div(e_noccd, r_noccd)) > 1e-6:
         raise test
 
-    nu = arange(old_div(1., x[-1]), old_div(1., x[0]),
-                1. / x[0] / 1e2) * clight_AHz
-    fn = (1. + sin(clight_AHz / 100. / nu)) * clight_AHz / nu / nu
+    nu = np.arange(old_div(1., x[-1]), old_div(1., x[0]),
+                   1. / x[0] / 1e2) * clight_AHz
+    fn = (1. + np.sin(clight_AHz / 100. / nu)) * clight_AHz / nu / nu
     xn = old_div(clight_AHz, nu)
-    rn = match_resol(x, r, xn)
-    e_ccd = old_div(add.reduce(fn * rn / nu), add.reduce(old_div(rn, nu)))
-    e_noccd = old_div(add.reduce(fn * rn), add.reduce(rn))
+    rn = useful.match_resol(x, r, xn)
+    e_ccd = old_div(np.add.reduce(fn * rn / nu), np.add.reduce(old_div(rn, nu)))
+    e_noccd = old_div(np.add.reduce(fn * rn), np.add.reduce(rn))
     r_ccd = flux(x, f, r, ccd='yes', units='nu')
     r_noccd = flux(x, f, r, ccd='no', units='nu')
 
@@ -942,12 +939,12 @@ def test():
         raise test
 
     test = 'AB'
-    Testing(test)
+    useful.Testing(test)
     if AB(10.**(-.4 * 48.60)) != 0.:
         raise test
 
     test = 'flux2mag and mag2flux'
-    Testing(test)
+    useful.Testing(test)
     m, f = 20., 1e-8
     if mag2flux(m) != f:
         raise test
@@ -955,7 +952,7 @@ def test():
         raise test
 
     test = 'e_frac2mag and e_mag2frac'
-    Testing(test)
+    useful.Testing(test)
     f = 1e8
     df = old_div(1e7, f)
     m = flux2mag(f)
@@ -972,17 +969,17 @@ def test():
     # igual que el que viene en el paper de Madau.
 
     test = 'f_z_sed'
-    Testing(test)
+    useful.Testing(test)
     # Estimate fluxes at different redshift for a galaxy with a f_nu\propto \nu spectrum
     # (No K correction) and check that their colors are constant
-    x = arange(1., 10001., 10.)
+    x = np.arange(1., 10001., 10.)
     f = old_div(1., x)
-    put_data(sed_dir + 'test.sed', (x, f))
-    z = arange(0., 10., .25)
+    useful.put_data(sed_dir + 'test.sed', (x, f))
+    z = np.arange(0., 10., .25)
     b = f_z_sed('test', 'B_Johnson.res', z, ccd='no', units='nu', madau='no')
     v = f_z_sed('test', 'V_Johnson.res', z, ccd='no', units='nu', madau='no')
-    c = array(list(map(flux2mag, old_div(b, v))))
-    if(sometrue(greater(abs(c - c[0]), 1e-4))):
+    c = np.array(list(map(flux2mag, old_div(b, v))))
+    if(np.sometrue(np.greater(abs(c - c[0]), 1e-4))):
         print(c - c[0])
         raise test
 
@@ -1000,9 +997,7 @@ def test():
     test = 'odds'
 
     test = ' the accuracy of our Johnson-Cousins-Landolt Vega-based zero-points'
-    Testing(test)
-    # filters=['U_Johnson.res','B_Johnson.res','V_Johnson.res','R_Cousins.res',
-    #'I_Cousins.res']
+    useful.Testing(test)
 
     filters = [
         'HST_ACS_WFC_F435W',
@@ -1015,7 +1010,7 @@ def test():
         'HST_ACS_WFC_F850LP'
     ]
 
-    ab_synphot = array([
+    ab_synphot = np.array([
         -0.10719,
         -0.10038,
         8.743e-4,
@@ -1026,7 +1021,7 @@ def test():
         0.568605
     ])
 
-    f_l_vega = array([
+    f_l_vega = np.array([
         6.462e-9,
         5.297e-9,
         3.780e-9,
@@ -1037,33 +1032,30 @@ def test():
         7.78e-10])
 
     print('     f_l for Vega')
-    sufix = 'cgs A^-1'
     print('                               f_lambda(Vega)     synphot(IRAF)   difference %')
     for i in range(len(filters)):
         f_vega = f_z_sed(Vega, filters[i], ccd='yes')
-        tupla = (ljust(filters[i], 16), f_vega,
+        tupla = (filters[i].ljust(16), f_vega,
                  f_l_vega[i], f_vega / f_l_vega[i] * 100. - 100.)
         print('     %s         %.6e       %.6e      %.4f' % tupla + "%")
 
     print('    ')
     print('    AB zeropoints for Vega ')
-    sufix = 'cgs Hz'
     tipo = 'nu'
     print("                                AB zero point     synphot(IRAF)   difference")
     for i in range(len(filters)):
         f_vega = f_z_sed(Vega, filters[i], units=tipo, ccd='yes')
-        tupla = (ljust(filters[i], 16), AB(f_vega),
+        tupla = (filters[i].ljust(16), AB(f_vega),
                  ab_synphot[i], AB(f_vega) - ab_synphot[i])
         print('     %s         %.6f       %.6f      %.6f' % tupla)
 
     print('    ')
     print('    AB zeropoints for a c/lambda^2 spectrum (flat in nu)')
-    sufix = 'cgs Hz'
     tipo = 'nu'
     print("                                 Result             Expected  ")
     for i in range(len(filters)):
         f_flat = f_z_sed('flat', filters[i], units=tipo, ccd='yes')
-        tupla = (ljust(filters[i], 16), AB(f_flat), 0.)
+        tupla = (filters[i].ljust(16), AB(f_flat), 0.)
         print('     %s         %.6e       %.6f' % tupla)
 
     print('')
