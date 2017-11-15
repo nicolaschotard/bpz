@@ -1,6 +1,4 @@
 # Automatically adapted for numpy Jun 08, 2006 by convertcode.py
-# ALSO CHECKED MANUALLY: from numpy import *
-# CHANGED MANUALLY: inf -> Inf; nan -> NaN
 
 """Matlab(tm) compatibility functions.
 

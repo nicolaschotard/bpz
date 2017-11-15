@@ -13,11 +13,8 @@
 # some performance when the functions are used on scalar arguments,
 # but should give a big win on vectors.
 
-#from builtins import range
-#from builtins import object
+
 import numpy as np
-#from Numeric import *
-#from numpy import *
 import operator
 import math
 from types import *
@@ -207,56 +204,6 @@ def all_but_axis(i, axis, num_axes):
     return the_slice
 
 
-# bind a binary function
-#class BinFuncBinder(BinFuncOps):
-#    def __init__(self, a_f):
-#        self.f = a_f
-#
-#    def __call__(self, arg1, arg2):
-#        return self.f(arg1, arg2)
-
-
-# bind single variables
-#class BinVar1(BinFuncOps):
-#    def __init__(self):
-#        pass
-#
-#    def __call__(self, arg1, arg2):
-#        return arg1
-
-
-#class BinVar2(BinFuncOps):
-#    def __init__(self):
-#        pass
-#
-#    def __call__(self, arg1, arg2):
-#        return arg2
-
-# bind individual variables within a binary function
-
-
-#class Bind1st(FuncOps):
-#    def __init__(self, a_f, an_arg1):
-#        self.f = a_f
-#        self.arg1 = an_arg1
-#
-#    def __call__(self, x):
-#        return self.f(self.arg1, x)
-
-
-#class Bind2nd(FuncOps):
-#    def __init__(self, a_f, an_arg2):
-#        self.f = a_f
-#        self.arg2 = an_arg2
-#
-#    def __call__(self, x):
-#        return self.f(x, self.arg2)
-
-# compose binary function with two unary functions (=> unary fcn)
-# i.e. given a(x,y), b(x), c(x), : d(x) = a(b(x),c(x))
-# (what about e(x,y) = a(b(x), c(y)?)
-
-
 class BinCompose(FuncOps):
     def __init__(self, a_binop, a_f, a_g):
         self.binop = a_binop
@@ -265,12 +212,8 @@ class BinCompose(FuncOps):
         self.temp = lambda x, op=a_binop, f=a_f, g=a_g: op(f(x), g(x))
 
     def __call__(self, arg):
-        # return self.binop(self.f(arg), self.g(arg))
         return self.temp(arg)
 
-
-# compose a unary function with a binary function to get a binary
-# function: f(g(x,y))
 
 class UnBinCompose(BinFuncOps):
     def __init__(self, a_f, a_g):
