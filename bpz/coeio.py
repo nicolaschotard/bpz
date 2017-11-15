@@ -17,6 +17,7 @@ import pyfits
 #    pyfitsloaded = False
 
 import os
+import sys
 import numpy as np
 
 
@@ -77,13 +78,15 @@ def params_cl():
     list = sys.argv[:]
     i = 0
     dict = {}
+    value = key = None
     oldkey = ""
     key = ""
     list.append('')  # EXTRA ELEMENT SO WE COME BACK AND ASSIGN THE LAST VALUE
     while i < len(list):
-        if striskey(list[i]) or not list[i]:  # (or LAST VALUE)
+        if coetools.striskey(list[i]) or not list[i]:  # (or LAST VALUE)
             if key:  # ASSIGN VALUES TO OLD KEY
                 if value:
+                    print(value)
                     if len(value) == 1:  # LIST OF 1 ELEMENT
                         value = value[0]  # JUST ELEMENT
                 dict[key] = value
@@ -94,11 +97,10 @@ def params_cl():
         else:  # VALUE (OR HAVEN'T GOTTEN TO KEYS)
             if key:  # (HAVE GOTTEN TO KEYS)
                 if value:
-                    value.append(str2num(list[i]))
+                    value.append(coetools.str2num(list[i]))
                 else:
-                    value = [str2num(list[i])]
+                    value = [coetools.str2num(list[i])]
         i += 1
-
     return dict
 
 
@@ -146,7 +148,7 @@ def loaddict(filename, dir="", silent=0):
     for line in lines:
         if line[0] != '#':
             words = line.split()
-            key = str2num(words[0])
+            key = coetools.str2num(words[0])
             val = ''  # if nothing there
             valstr = ' '.join(words[1:])
             valtuple = False
@@ -155,11 +157,11 @@ def loaddict(filename, dir="", silent=0):
                 valstr = valstr[1:-1].replace(',', '')
                 words[1:] = valstr.split()
             if len(words) == 2:
-                val = str2num(words[1])
+                val = coetools.str2num(words[1])
             elif len(words) > 2:
                 val = []
                 for word in words[1:]:
-                    val.append(str2num(word))
+                    val.append(coetools.str2num(word))
                 if valtuple:
                     val = tuple(val)
 
@@ -191,7 +193,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
     if dow and os.path.exists(outfile):
         print(outfile, " ALREADY EXISTS")
     else:
-        skycat = strend(filename, '.scat')
+        skycat = coetools.strend(filename, '.scat')
         if skycat:
             separator = '\t'
         if len(data.shape) == 1:
@@ -532,7 +534,7 @@ def loaddata(filename, dir="", silent=0, headlines=0):
 
     nx = len(ss)
     #size = [nx,ny]
-    data = FltArr(ny, nx)
+    data = coetools.FltArr(ny, nx)
 
     sin = sin[headlines:ny + headlines]
 
@@ -764,7 +766,7 @@ class VarsClass(object):
     def __init__(self, filename='', dir="", silent=0, labels='', labelheader='', headlines=0, loadheader=0):
         self.header = ''
         if filename:
-            if strend(filename, '.fits'):  # FITS TABLE
+            if coetools.strend(filename, '.fits'):  # FITS TABLE
                 self.name = filename
                 filename = dirfile(filename, dir)
                 hdulist = pyfits.open(filename)
@@ -930,11 +932,11 @@ class VarsClass(object):
             indexlist = np.zeros(maxselfid + 1, int) - 1
             put(indexlist, idchecklist, np.arange(self.len()))  # [- - - - 1 2 0]
             # ids = [4 6]  ->  indices = [1 0]
-            indices = take(indexlist, np.array(ids).astype(int))
+            indices = np.take(indexlist, np.array(ids).astype(int))
             if (-1 in indices) and (rep < 2):
                 print("PROBLEM! NOT ALL IDS FOUND IN putids!")
                 print(np.compress(np.less(indices, 0), ids))
-            if singlevalue(values):
+            if coetools.singlevalue(values):
                 values = np.zeros(self.len(), float) + values
             put(x, indices, values)
             put(idchecklist, indices, 0)
@@ -960,7 +962,7 @@ class VarsClass(object):
 
     def removeids(self, ids, idlabel='id'):
         selfid = self.get(idlabel).astype(int)  # [6 4 5]
-        if singlevalue(ids):
+        if coetools.singlevalue(ids):
             ids = [ids]
         newids = invertselection(ids, selfid)
         return self.takeids(newids)
@@ -973,13 +975,13 @@ class VarsClass(object):
         return out
 
     def set(self, label, data):
-        if singlevalue(data):
+        if coetools.singlevalue(data):
             data = np.zeros(self.len(), float) + data
         exec('self.%s = data' % label)
 
     def add(self, label, data):
         if 1:  # self.labels:
-            if singlevalue(data):
+            if coetools.singlevalue(data):
                 if self.len():
                     data = np.zeros(self.len(), float) + data
                 else:
@@ -1032,7 +1034,7 @@ class VarsClass(object):
     def sort(self, label):  # label could also be an array
         if type(label) == str:
             if (label == 'random') and ('random' not in self.labels):
-                SI = argsort(random(self.len()))
+                SI = np.argsort(np.random(self.len()))
             else:
                 if label[0] == '-':  # Ex.: -odds
                     label = label[1:]
@@ -1043,9 +1045,9 @@ class VarsClass(object):
                 if reverse:
                     SI = SI[::-1]
         else:
-            SI = argsort(label)  # label contains an array
+            SI = np.argsort(label)  # label contains an array
         self.updatedata()
-        self.data = take(self.data, SI, 1)
+        self.data = np.take(self.data, SI, 1)
         self.assigndata()
 
     def findmatches(self, searchcat1, dtol=4):
@@ -1063,21 +1065,22 @@ class VarsClass(object):
         for i in range(self.len()):
             if not (i % 100):
                 print("%d / %d" % (i, self.len()))
-            matchid, dist = findmatch(
-                searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=0)
+            matchid, dist = coetools.findmatch(searchcat.x, searchcat.y, self.x[i],
+                                               self.y[i], dtol=dtol[i], silent=1,
+                                               returndist=1, xsorted=0)
             matchids.append(matchid)
             dists.append(dist)
         matchids = np.array(matchids)
         dists = np.array(dists)
-        matchids = where(equal(matchids, searchcat.len()), -1, matchids)
+        matchids = np.where(np.equal(matchids, searchcat.len()), -1, matchids)
         self.assign('matchid', matchids)
         self.assign('dist', dists)
 
     def findmatches2(self, searchcat, dtol=0):
         """Finds closest matches for self within searchcat"""
-        i, d = findmatches2(searchcat.x, searchcat.y, self.x, self.y)
+        i, d = coetools.findmatches2(searchcat.x, searchcat.y, self.x, self.y)
         if dtol:
-            i = where(np.less(d, dtol), i, -1)
+            i = np.where(np.less(d, dtol), i, -1)
         self.assign('matchi', i)
         self.assign('dist', d)
 

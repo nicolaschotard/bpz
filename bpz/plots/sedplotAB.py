@@ -30,7 +30,8 @@ from coeplott import *  # pylab, prange, rectangle
 import shelve
 from bpz.MLab_coe import ndec
 # , prange, plotconfig
-from bpz.coeio import loaddata, loadfile, params_cl, str2num, loaddict, findmatch1, pause
+from bpz.coeio import loaddata, loadfile, params_cl, loaddict
+from bpz.coetools import str2num, findmatch1, pause
 from numpy import *  # (REIMPORT!, OTHERWISE numarray TAKES OVER)
 import string  # AFTER numpy, WHICH HAS ITS OWN string
 from os.path import exists, join
