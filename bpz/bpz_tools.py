@@ -1,9 +1,6 @@
 #!/usr/local/bin/python
 
-""" bpz_tools.py: Contains useful functions for I/O and math.
-    TO DO:
-      Include higher order interpolations
-"""
+""" bpz_tools.py: Contains useful functions for I/O and math."""
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -558,38 +555,6 @@ def ABtoVega(m_ab, filter, Vega=Vega):
 # Photometric redshift functions
 
 
-def likelihood(f, ef, ft_z):
-    """
-    Usage: ps[:nz,:nt]=likelihood(f[:nf],ef[:nf],ft_z[:nz,:nt,:nf])
-    """
-    global minchi2
-    axis = ft_z.shape
-    nz = axis[0]
-    nt = axis[1]
-
-    chi2 = np.zeros((nz, nt), float)
-    ftt = np.zeros((nz, nt), float)
-    fgt = np.zeros((nz, nt), float)
-
-    ief2 = old_div(1., (ef * ef))
-    fgg = np.add.reduce(f * f * ief2)
-    factor = ft_z[:nz, :nt, :] * ief2
-
-    ftt[:nz, :nt] = np.add.reduce(ft_z[:nz, :nt, :] * factor, -1)
-    fgt[:nz, :nt] = np.add.reduce(f[:] * factor, -1)
-    chi2[:nz, :nt] = fgg - old_div(np.power(fgt[:nz, :nt], 2), ftt[:nz, :nt])
-
-    min_chi2 = min(chi2)
-    minchi2 = min(min_chi2)
-#   chi2=chi2-minchi2
-    chi2 = np.clip(chi2, 0., -2. * eeps)
-
-    p = np.where(np.greater_equal(chi2, -2. * eeps), 0., np.exp(old_div(-chi2, 2.)))
-
-    norm = np.add.reduce(np.add.reduce(p))
-    return old_div(p, norm)
-
-
 class p_c_z_t(object):
     def __init__(self, f, ef, ft_z):
         self.nz, self.nt, self.nf = ft_z.shape
@@ -640,18 +605,6 @@ class p_c_z_t(object):
 
     def bayes_likelihood(self):
         return self.Bayes_likelihood
-
-    def various_plots(self):
-        # Normalize and collapse likelihoods (without prior)
-        norm = np.add.reduce(np.add.reduce(self.Bayes_likelihood))
-        bl = np.add.reduce(old_div(self.Bayes_likelihood, norm), -1)
-        norm = np.add.reduce(np.add.reduce(self.likelihood))
-        l = np.add.reduce(old_div(self.likelihood, norm), -1)
-        plo = FramedPlot()
-        plo.np.add(Curve(np.arange(self.nz), bl, color='blue'))
-        plo.np.add(Curve(np.arange(self.nz), l, color='red'))
-        plo.show()
-        useful.ask('More?')
 
 
 class p_c_z_t_color(object):
@@ -746,102 +699,6 @@ def odds(p, x, x1, x2):
     if i2 > len(x) - 1:
         return 1. - old_div(cp[i1], cp[-1])
     return old_div((cp[i2] - cp[i1]), cp[-1])
-
-
-# Misc stuff
-
-
-def get_datasex(file, cols, purge=1, mag=(2, 99.), emag=(4, .44), flag=(24, 4), detcal='none'):
-    """
-      Usage:
-      x,y,mag,emag=get_datasex('file.cat',(0,1,24,12))
-      If purge=1, the function returns the corresponding columns
-      of a SExtractor output file, excluding those objects with
-      magnitude <mag[1], magnitude error <=emag[1] and flag <=flag[1]
-      mag[0],emag[0] and flag[0] indicate the columns listing
-      these quantities in the file
-      detcal: a detection image was used to create the catalog
-      It will be used now to determine which objects are good.
-    """
-    if type(cols) == type(0):
-        nvar = 1
-    else:
-        nvar = len(cols)
-
-    if purge:
-        if nvar > 1:
-            datos = useful.get_2Darray(file, cols)
-        else:
-            datos = useful.get_data(file, cols)
-        if detcal == 'none':
-            detcal = file
-        m, em, f = useful.get_data(detcal, (mag[0], emag[0], flag[0]))
-        good = np.less_equal(f, flag[1]) * np.less_equal(em,
-                                                         emag[1]) * np.less(m, mag[1])
-        datos = np.compress(good, datos, 0)
-        lista = []
-        if nvar > 1:
-            for i in range(datos.shape[1]):
-                lista.append(datos[:, i])
-            return tuple(lista)
-        else:
-            return datos
-    else:
-        return useful.get_data(file, cols)
-
-
-class bpz_diagnosis(object):
-    def __init__(self, bpz_file='/home/txitxo/bpz/TEST/hdfn.bpz',
-                 columns=(1, 4, 5, 6, 9, 10)):
-        # columns correspond to the positions of the variables z_b,odds,z_ml, z_s and m_0
-        # in the bpz file
-        self.zb, self.tb, self.odds, self.zm, self.zs, self.mo = useful.get_data(
-            bpz_file, columns)
-
-    def stats(self, type='rms',
-              odds_min=0.99,
-              mo_min=0., mo_max=99.,
-              zs_min=0., zs_max=6.5,
-              t_min=0, t_max=100,
-              plots='yes',
-              thr=.2):
-        good = np.greater_equal(self.mo, mo_min)
-        good *= np.less_equal(self.mo, mo_max)
-        good *= np.greater_equal(self.zs, zs_min)
-        good *= np.less_equal(self.zs, zs_max)
-        good *= np.greater_equal(self.tb, t_min)
-        good *= np.less_equal(self.tb, t_max)
-        self.n_total = len(good)
-        self.good = good * np.greater_equal(self.odds, odds_min)
-        self.n_selected = sum(self.good)
-        self.d = np.compress(self.good, old_div(
-            (self.zb - self.zs), (1. + self.zs)))
-
-        b = useful.stat_robust(self.d, 3, 5)
-        b.run()
-        self.n_remaining = b.n_remaining
-        self.n_outliers = b.n_outliers
-        self.rms = b.rms
-        self.med = b.median
-        self.std_log = useful.std_log(self.d)
-        if plots == 'yes':
-            # points(np.compress(self.good,self.zs),np.compress(self.good,self.zb),(0.,zs_max,0.,zs_max))
-            p = FramedPlot()
-            xmin = min(np.compress(self.good, self.zs))
-            xmax = max(np.compress(self.good, self.zs))
-            print(xmin, xmax)
-            x = np.arange(xmin, xmax, .01)
-            p.add(Curve(x, x, width=3))
-            p.add(Curve(x, x + 3. * self.rms * (1. + x), width=1))
-            p.add(Curve(x, x - 3. * self.rms * (1. + x), width=1))
-            p.add(Points(np.compress(self.good, self.zs),
-                         np.compress(self.good, self.zb)))
-            p.xlabel = r"$z_{spec}$"
-            p.ylabel = r"$z_b$"
-            p.show()
-            if useful.ask("save plot?"):
-                name = input("name?")
-                p.write_eps(name)
 
 
 def test():
