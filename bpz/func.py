@@ -76,14 +76,14 @@ class FuncOps(object):
 
 # Bind a normal function
 # Should check if the argument is a function.
-class FuncBinder(FuncOps):
-    def __init__(self, a_f):
-        if ((type(a_f) == UfuncType)
-            or
-            (type(a_f) == types.InstanceType and
-             FuncOps in a_f.__class__.__bases__)):
-            self.__call__ = a_f        # overwrite the existing call method
-        self.call = a_f
+#class FuncBinder(FuncOps):
+#    def __init__(self, a_f):
+#        if ((type(a_f) == UfuncType)
+#            or
+#            (type(a_f) == types.InstanceType and
+#             FuncOps in a_f.__class__.__bases__)):
+#            self.__call__ = a_f        # overwrite the existing call method
+#        self.call = a_f
 
 
 # wrap a constant in a Function class
@@ -98,12 +98,12 @@ class UnConstant(FuncOps):
 # This is used to build up more complex expressions.
 
 
-class Identity(FuncOps):
-    def __init__(self):
-        pass
-
-    def __call__(self, arg):
-        return arg
+#class Identity(FuncOps):
+#    def __init__(self):
+#        pass
+#
+#    def __call__(self, arg):
+#        return arg
 
 
 # compose two unary functions
