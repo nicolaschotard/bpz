@@ -202,7 +202,6 @@ class bpzPlots(object):
             if len(bpzdata.shape) == 1:
                 bpzdata.shape = (1, len(bpzdata))
             bpzdata = np.transpose(bpzdata)
-            print(self.bpzcols)
             if 'ODDS' in self.bpzcols:
                 i = self.bpzcols.index('ODDS')
             else:
@@ -366,8 +365,8 @@ class bpzPlots(object):
             zorder = -1
             if nobox:
                 zorder = 10
-                pylab.plot(xinxrange.tolist(), yinxrange.tolist(),
-                           color='gray', zorder=zorder)
+            pylab.plot(xinxrange.tolist(), yinxrange.tolist(),
+                       color='gray', zorder=zorder)
             linewidth = 1.5 + 2 * self.thick
             fontsize = 3 + 0.5 * self.thick
 
