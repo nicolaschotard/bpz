@@ -8,21 +8,9 @@ from __future__ import absolute_import
 from past.utils import old_div
 import os
 import sys
-
-import types
 import numpy as np
-from . import MLab_coe
 import time
-import string # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
-
-# If biggles installed allow the plot options in the tests
-plots = 1
-try:
-    import biggle
-except:
-    plots = 0
-
-pi = 3.141592653
+import string  # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
 
 
 def ejecuta(command=None, verbose=1):
@@ -287,8 +275,6 @@ def params_file(file):
         if len(pieces) == 0:
             continue
         key = pieces[0]
-#	if type(key)<>type(''):
-#	    raise 'Keyword not string!'
         if len(pieces) < 2:
             mensaje = 'No value(s) for parameter  ' + key
             raise mensaje
@@ -397,16 +383,6 @@ Do you want to include it?(y/n)\n")
             buffer = buffer + line + '\n'
         print(line)
         open(file, 'w').write(buffer)
-
-# List of colors from biggles:
-
-
-def biggles_colors():
-    try:
-        import biggles
-    except:
-        pass
-    return get_str('/home/txitxo/Python/biggles_colors.txt', 0)
 
 
 # Some miscellaneous numerical functions
@@ -807,7 +783,7 @@ class stat_robust(object):
             nmin = int((0.5 * self.reject_fraction) * npx)
             nmax = int((1. - 0.5 * self.reject_fraction) * npx)
             orden = np.argsort(self.x)
-            connect(np.arange(len(self.x)), np.sort(self.x))
+            #connect(np.arange(len(self.x)), np.sort(self.x))
             good = np.greater(orden, nmin) * np.less(orden, nmax)
 
         self.remaining = np.compress(good, self.x)
@@ -942,7 +918,7 @@ def erf(x):
 def erf_brute(x):
     step = 0.00001
     t = np.arange(0., x + step, step)
-    f = 2. / np.sqrt(pi) * np.exp(-t * t)
+    f = 2. / np.sqrt(np.pi) * np.exp(-t * t)
     return sum(f) * step
 
 
@@ -952,7 +928,7 @@ def erfc_brute(x):
 
 def gauss_int_brute(x=np.arange(0., 3., .01), average=0., sigma=1.):
     step = x[1] - x[0]
-    gn = 1. / np.sqrt(2. * pi) / sigma * np.exp(-(x - average)**2 / 2. / sigma**2)
+    gn = 1. / np.sqrt(2. * np.pi) / sigma * np.exp(-(x - average)**2 / 2. / sigma**2)
     return np.add.accumulate(gn) * step
 
 
@@ -980,51 +956,11 @@ def inv_gauss_int(p):
         sys.exit()
     step = .00001
     xn = np.arange(0., 4. + step, step)
-    gn = 1. / np.sqrt(2. * pi) * np.exp(old_div(-xn**2, 2.))
+    gn = 1. / np.sqrt(2. * np.pi) * np.exp(old_div(-xn**2, 2.))
     cgn = np.add.accumulate(gn) * step
     p = old_div(p, 2.)
     ind = np.searchsorted(cgn, p)
     return xn[ind]
-
-
-def points(x, y, limits=(None, None, None, None), title='Plot'):
-    # Quickly plot two vectors using biggles
-    p = FramedPlot()
-    if limits[0] != None and limits[1] != None:
-        p.xrange = limits[0], limits[1]
-    if limits[2] != None and limits[3] != None:
-        p.yrange = limits[2], limits[3]
-    p.add(Points(x, y))
-    p.add(Slope(0.))
-    p.title = title
-    p.show()
-
-
-def pointswriteimg(x, y, limits=(None, None, None, None), title='Plot', xsize=600, ysize=600, name=''):
-    # Quickly plot two vectors using biggles
-    p = FramedPlot()
-    if limits[0] != None and limits[1] != None:
-        p.xrange = limits[0], limits[1]
-    if limits[2] != None and limits[3] != None:
-        p.yrange = limits[2], limits[3]
-    p.add(Points(x, y))
-    p.add(Slope(0.))
-    p.title = title
-    p.show()
-    if not name:
-        name = title + '.png'
-    p.write_img(xsize, ysize, name)
-
-
-def connect(x, y, limits=(None, None, None, None)):
-    # Quickly plot two vectors using biggles
-    p = FramedPlot()
-    if limits[0] != None and limits[1] != None:
-        p.xrange = limits[0], limits[1]
-    if limits[2] != None and limits[3] != None:
-        p.yrange = limits[2], limits[3]
-    p.add(Curve(x, y))
-    p.show()
 
 
 def mark_outliers(x, n_sigma=3., n=5):  # --DC
@@ -1059,40 +995,6 @@ def mark_faroutliers(x, n_sigma=3., n=5, n_farout=2):  # --DC
     toolo = np.less(n_out + 0.5, -n_farout)
     outliers = outliers - 2 * toolo
     return outliers
-
-
-def pointsrobust(x, y, limits=(None, None, None, None), title='Plot'):  # --DC
-    # Quickly plot two vectors using biggles
-    p = FramedPlot()
-    if limits[0] != None and limits[1] != None:
-        p.xrange = limits[0], limits[1]
-    if limits[2] != None and limits[3] != None:
-        p.yrange = limits[2], limits[3]
-    p.add(Slope(0.))
-    outliers = mark_faroutliers(y)
-    if sum(outliers):
-        xg, yg = np.compress(np.logical_not(outliers), (x, y))
-        p.add(Points(xg, yg))
-        yglo, yghi = min(yg), max(yg)
-        toohi = np.greater(y, yghi)
-        toolo = np.less(y, yglo)
-        y = np.clip(y, yglo, yghi)
-        dy = old_div((yghi - yglo), 20.)
-        if sum(toohi):
-            xohi, yohi = np.compress(toohi, (x, y))
-            for i in range(len(yohi)):
-                p.add(Curve([xohi[i], xohi[i]], [yohi[i], yohi[i] + dy]))
-            p.add(Points(xohi, yohi + dy, type='half filled triangle'))
-        if sum(toolo):
-            xolo, yolo = np.compress(toolo, (x, y))
-            for i in range(len(yolo)):
-                p.add(Curve([xolo[i], xolo[i]], [yolo[i], yolo[i] + dy]))
-            p.add(Points(xolo, yolo - dy, type='half filled inverted triangle'))
-    else:
-        p.add(Points(x, y))  # no outliers
-    p.title = title
-    p.yrange = [yglo - 2 * dy, yghi + 2 * dy]
-    p.show()
 
 
 class NumberCounts(object):
@@ -1243,14 +1145,6 @@ def test():
     if ascend(z):
         raise test
 
-#    test="hist"
-#    Testing(test)
-#    x=np.arange(0.,100.,.1)
-#    y=np.arange(100.)
-#    h=hist(x,y)
-#    points(h,ones(100)*10)
-#    if sometrue(not_equal(h,ones(100)*10)): raise test
-
     test = "bin_aver"
     Testing(test)
     x = np.arange(0., 10.1, .1)
@@ -1263,7 +1157,7 @@ def test():
 
     test = 'dist'
     Testing(test)
-    a = np.arange(0, 2. * pi, old_div(pi, 6.))
+    a = np.arange(0, 2. * np.pi, old_div(np.pi, 6.))
     x = 10. * np.sin(a) + 3.
     y = 5 * np.cos(a) - 3.
     d = np.sqrt((((x - 3.)**2 + (y + 3.)**2)))
@@ -1306,8 +1200,6 @@ def test():
     y0 = np.arange(10., 10010.)
     t2 = (list(map(str, x0)), list(map(str, y0)))
     cosas1 = match_min((x, y), (x0, y0), t1, t2)
-    # put_data('bobo',cosas1)
-    #os.system('more bobo')
     if not (cosas1[2] == cosas1[4] and cosas1[3] == cosas1[5]):
         raise test
 
@@ -1318,18 +1210,9 @@ def test():
     xt = np.arange(0., 10., old_div(.33, 2.))
     yt = match_resol(xobs, yobs, xt)
     ytobs = np.cos(xt) * np.exp(-xt)
-    if plots:
-        plot = FramedPlot()
-        plot.add(Points(xobs, yobs, color="blue", type='cross'))
-        plot.add(Curve(xt, yt, color="red"))
-        plot.add(Points(xt, yt, color="red", type='square'))
-        plot.show()
-        print("The crosses are the original data")
-        print("The continuous line/red squares represents the interpolation")
-    else:
-        print('   X     Y_Interp  Y_expected')
-        for i in range(len(x)):
-            print(3 * '%7.4f  ' % (xt[i], yt[i], ytobs[i]))
+    print('   X     Y_Interp  Y_expected')
+    for i in range(len(x)):
+        print(3 * '%7.4f  ' % (xt[i], yt[i], ytobs[i]))
 
     test = "gauss_int"
     Testing(test)
@@ -1348,11 +1231,8 @@ def test():
         z = inv_gauss_int(2. * pt[i])
         if abs(x[i] - z) > 1e-3:
             raise test
-
     print('Everything tested seems to be OK in useful.py')
 
 
 if __name__ == '__main__':
     test()
-else:
-    pass

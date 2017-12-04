@@ -13,7 +13,6 @@ import numpy as np
 from . import coetools
 from . import useful
 import os
-# import biggles # for Points, FramedPlot and Curve plots
 
 clight_AHz = 2.99792458e18
 Vega = 'Vega_reference'
@@ -748,67 +747,6 @@ def odds(p, x, x1, x2):
         return 1. - old_div(cp[i1], cp[-1])
     return old_div((cp[i2] - cp[i1]), cp[-1])
 
-
-class p_bayes(object):
-    # This class reads the information contained in the files produced by BPZ
-    # when the option -PROBS_LITE is on
-    def __init__(self, file):
-        self.file = file
-        dummy = useful.get_2Darray(file)
-        self.id_list = list(map(int, list(dummy[:, 0])))
-        self.p = dummy[:, 1:]
-        del(dummy)
-        header = useful.get_header(file)
-        header = header.split('(')[2]
-        header = header.split(')')[0]
-        zmin, zmax, dz = list(map(float, tuple(header.split(','))))
-        self.z = np.arange(zmin, zmax, dz)
-
-    def plot_p(self, id, limits=None):
-        if type(id) != type((1,)):
-            try:
-                j = self.id_list.index(int(id))
-                p_j = self.p[j, :]
-                if limits is None:
-                    useful.connect(self.z, p_j)
-                else:
-                    useful.connect(self.z, p_j, limits)
-            except:
-                print('Object %i not in the file %s' % (id, self.file))
-            self.prob = old_div(p_j, max(p_j))
-        else:
-            p = FramedPlot()
-            p.frame1.draw_grid = 1
-            pall = self.p[0, :] * 0. + 1.
-            pmax = 0.
-            if limits is not None:
-                p.xrange = limits[0], limits[1]
-                p.yrange = limits[2], limits[3]
-            for i in id:
-                try:
-                    j = self.id_list.index(int(i))
-                    p_j = self.p[j, :]
-                    if max(p_j) > pmax:
-                        pmax = max(p_j)
-                    pall *= p_j
-                    p.add(Curve(self.z, p_j))
-                except:
-                    print('Object %i not in the file %s' % (id, self.file))
-            p.add(Curve(self.z, pall / max(pall) * pmax, color='red'))
-            p.show()
-            self.prob = old_div(pall, max(pall))
-
-    def maxima(self, limits=(0., 6.5)):
-        g = np.greater_equal(self.z, limits[0]) * np.less_equal(self.z, limits[1])
-        z, p = useful.multicompress(g, (self.z, self.prob))
-        imax = np.argmax(p)
-        xp = np.add.accumulate(p)
-        xp /= xp[-1]
-        self.q66 = useful.match_resol(xp, z, np.array([0.17, 0.83]))
-        self.q90 = useful.match_resol(xp, z, np.array([0.05, 0.95]))
-        # print self.q66
-        # print self.q90
-        return z[imax]
 
 # Misc stuff
 

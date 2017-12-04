@@ -589,8 +589,7 @@ def bpz_run(argv=None):
     # When there are spectroscopic redshifts available
     if interactive and 'Z_S' in col_pars.d and plots and checkSED and ask('Plot colors vs spectroscopic redshifts?'):
         color_m = np.zeros((nz, nt, nf - 1)) * 1.
-        if plots == 'pylab':
-            figure(1)
+        pylab.figure(1)
         nrows = 2
         ncols = old_div((nf - 1), nrows)
         if (nf - 1) % nrows:
@@ -601,41 +600,26 @@ def bpz_run(argv=None):
             fmu = f_obs[:, i + 1]
             fml = f_obs[:, i]
             good = np.greater(fml, 1e-100) * np.greater(fmu, 1e-100)
-            zz, fmu, fml = multicompress(good, (z_s, fmu, fml))
+            zz, fmu, fml = useful.multicompress(good, (z_s, fmu, fml))
             colour = old_div(fmu, fml)
             colour = np.clip(colour, 1e-5, 1e5)
-            colour = 2.5 * log10(colour)
-            if plots == 'pylab':
-                subplot(nrows, ncols, i + 1)
-                plot(zz, colour, "bo")
-            elif plots == 'biggles':
-                d = Points(zz, colour, color='blue')
-                plot.add(d)
+            colour = 2.5 * np.log10(colour)
+            pylab.subplot(nrows, ncols, i + 1)
+            pylab.plot(zz, colour, "bo")
             for it in range(nt):
                 # Prevent overflows
                 fmu = f_mod[:, it, i + 1]
                 fml = f_mod[:, it, i]
                 good = np.greater(fml, 1e-100)
-                zz, fmu, fml = multicompress(good, (z, fmu, fml))
+                zz, fmu, fml = useful.multicompress(good, (z, fmu, fml))
                 colour = old_div(fmu, fml)
                 colour = np.clip(colour, 1e-5, 1e5)
-                colour = 2.5 * log10(colour)
-                if plots == 'pylab':
-                    plot(zz, colour, "r")
-                elif plots == 'biggles':
-                    d = Curve(zz, colour, color='red')
-                    plot.add(d)
-            if plots == 'pylab':
-                xlabel(r'$z$')
-                ylabel('%s - %s' % (filters[i], filters[i + 1]))
-            elif plots == 'biggles':
-                plot.xlabel = r'$z$'
-                plot.ylabel = '%s - %s' % (filters[i], filters[i + 1])
-                plot.save_as_eps('%s-%s.eps' % (filters[i], filters[i + 1]))
-                plot.show()
-        if plots == 'pylab':
-            show()
-            inp = input('Hit Enter to continue.')
+                colour = 2.5 * np.log10(colour)
+                pylab.plot(zz, colour, "r")
+            pylab.xlabel(r'$z$')
+            pylab.ylabel('%s - %s' % (filters[i], filters[i + 1]))
+        pylab.show()
+        inp = input('Hit Enter to continue.')
     
     # Get other information which will go in the output file (as strings)
     if 'OTHER' in col_pars.d:
@@ -1187,7 +1171,7 @@ def bpz_run(argv=None):
                 print(
                     'Total initial number of objects with spectroscopic redshifts= ', np.sum(good))
                 od_th = 0.
-                if ask('Select for galaxy characteristics?\n'):
+                if useful.ask('Select for galaxy characteristics?\n'):
                     od_th = eval(input('Odds threshold?\n'))
                     good *= np.greater_equal(o, od_th)
                     t_min = eval(input('Minimum spectral type\n'))
@@ -1199,12 +1183,12 @@ def bpz_run(argv=None):
                         good = good * np.less_equal(m_0, mg_max) * \
                             np.greater_equal(m_0, mg_min)
     
-                zmo, zso, zbo, zb1o, zb2o, tb = multicompress(
+                zmo, zso, zbo, zb1o, zb2o, tb = useful.multicompress(
                     good, (zm, z_s, zb, zb1, zb2, tb))
                 print('Number of objects with odds > %.2f= %i ' %
                       (od_th, len(zbo)))
                 deltaz = old_div((zso - zbo), (1. + zso))
-                sz = stat_robust(deltaz, 3., 3)
+                sz = useful.stat_robust(deltaz, 3., 3)
                 sz.run()
                 outliers = np.greater_equal(abs(deltaz), 3. * sz.rms)
                 print('Number of outliers [dz >%.2f*(1+z)]=%i' %
@@ -1214,103 +1198,21 @@ def bpz_run(argv=None):
                 print('Number of catastrophic outliers [dz >1]=', n_catast)
                 print('Delta z/(1+z) = %.4f +- %.4f' % (sz.median, sz.rms))
                 if interactive and plots:
-                    if plots == 'pylab':
-                        figure(2)
-                        subplot(211)
-                        plot(np.arange(min(zso), max(zso) + 0.01, 0.01),
-                             np.arange(min(zso), max(zso) + 0.01, 0.01),
-                             "r")
-                        errorbar(zso, zbo, [abs(zbo - zb1o),
-                                            abs(zb2o - zbo)], fmt="bo")
-                        xlabel(r'$z_{spec}$')
-                        ylabel(r'$z_{bpz}$')
-                        subplot(212)
-                        plot(zso, zmo, "go", zso, zso, "r")
-                        xlabel(r'$z_{spec}$')
-                        ylabel(r'$z_{ML}$')
-                        show()
-                    elif plots == 'biggles':
-                        plot = FramedPlot()
-                        if len(zso) > 2000:
-                            symbol = 'dot'
-                        else:
-                            symbol = 'circle'
-                        plot.add(Points(zso, zbo, symboltype=symbol, color='blue'))
-                        plot.add(Curve(zso, zso, linewidth=2., color='red'))
-                        plot.add(ErrorBarsY(zso, zb1o, zb2o))
-                        plot.xlabel = r'$z_{spec}$'
-                        plot.ylabel = r'$z_{bpz}$'
-                        #	    plot.xrange=0.,1.5
-                        #	    plot.yrange=0.,1.5
-                        plot.show()
-                        #
-                        plot_ml = FramedPlot()
-                        if len(zso) > 2000:
-                            symbol = 'dot'
-                        else:
-                            symbol = 'circle'
-                        plot_ml.add(
-                            Points(zso, zmo, symboltype=symbol, color='blue'))
-                        plot_ml.add(Curve(zso, zso, linewidth=2., color='red'))
-                        plot_ml.xlabel = r"$z_{spec}$"
-                        plot_ml.ylabel = r"$z_{ML}$"
-                        plot_ml.show()
-    
-        if interactive and plots and ask('Plot Bayesian photo-z histogram?'):
-            if plots == 'biggles':
-                dz = eval(input('Redshift interval?\n'))
-                od_th = eval(input('Odds threshold?\n'))
-                good = np.greater_equal(o, od_th)
-                if has_mags:
-                    mg_min = eval(input('Bright magnitude limit?\n'))
-                    mg_max = eval(input('Faint magnitude limit?\n'))
-                    good = good * np.less_equal(m_0, mg_max) * \
-                        np.greater_equal(m_0, mg_min)
-                z = compress(good, zb)
-                xz = np.arange(zmin, zmax, dz)
-                hz = hist(z, xz)
-                plot = FramedPlot()
-                h = Histogram(hz, 0., dz, color='blue')
-                plot.add(h)
-                plot.xlabel = r'$z_{bpz}$'
-                plot.ylabel = r'$N(z_{bpz})$'
-                plot.show()
-                if ask('Want to save plot as eps file?'):
-                    file = input('File name?\n')
-                    if file[-2:] != 'ps':
-                        file = file + '.eps'
-                    plot.save_as_eps(file)
-    
-        if interactive and plots and ask('Compare colors with photometric redshifts?'):
-            if plots == 'biggles':
-                color_m = np.zeros((nz, nt, nf - 1)) * 1.
-                for i in range(nf - 1):
-                    plot = FramedPlot()
-                    # Check for overflows
-                    fmu = f_obs[:, i + 1]
-                    fml = f_obs[:, i]
-                    good = np.greater(fml, 1e-100) * np.greater(fmu, 1e-100)
-                    zz, fmu, fml = multicompress(good, (zb, fmu, fml))
-                    colour = old_div(fmu, fml)
-                    colour = np.clip(colour, 1e-5, 1e5)
-                    colour = 2.5 * log10(colour)
-                    d = Points(zz, colour, color='blue')
-                    plot.add(d)
-                    for it in range(nt):
-                        # Prevent overflows
-                        fmu = f_mod[:, it, i + 1]
-                        fml = f_mod[:, it, i]
-                        good = np.greater(fml, 1e-100)
-                        zz, fmu, fml = multicompress(good, (z, fmu, fml))
-                        colour = old_div(fmu, fml)
-                        colour = np.clip(colour, 1e-5, 1e5)
-                        colour = 2.5 * log10(colour)
-                        d = Curve(zz, colour, color='red')
-                        plot.add(d)
-                    plot.xlabel = r'$z$'
-                    plot.ylabel = '%s - %s' % (filters[i], filters[i + 1])
-                    plot.save_as_eps('%s-%s.eps' % (filters[i], filters[i + 1]))
-                    plot.show()
+                    #if plots == 'pylab':
+                    pylab.figure(2)
+                    pylab.subplot(211)
+                    pylab.plot(np.arange(min(zso), max(zso) + 0.01, 0.01),
+                               np.arange(min(zso), max(zso) + 0.01, 0.01),
+                               "r")
+                    pylab.errorbar(zso, zbo, [abs(zbo - zb1o),
+                                              abs(zb2o - zbo)], fmt="bo")
+                    pylab.xlabel(r'$z_{spec}$')
+                    pylab.ylabel(r'$z_{bpz}$')
+                    pylab.subplot(212)
+                    pylab.plot(zso, zmo, "go", zso, zso, "r")
+                    pylab.xlabel(r'$z_{spec}$')
+                    pylab.ylabel(r'$z_{ML}$')
+                    pylab.show()
     
     rolex.check()
 

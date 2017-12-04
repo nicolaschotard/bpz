@@ -1121,8 +1121,6 @@ def colormap_obsolete(x, y, z, valrange=[None, None], cmap='jet', markersize=5):
         if not (MLab_coe.isNaN(z[i]) or (valrange[0] == valrange[1])):
             pylab.plot([x[i]], [y[i]], 'o', markerfacecolor=colormaprgb(
                 z[i], valrange=valrange), markersize=markersize)
-        else:
-            p.add(Point(x[i], y[i], 'ko', markersize=markersize))  # Point from biggles ?
 
     pylab.colorbar()
     pylab.ion()
