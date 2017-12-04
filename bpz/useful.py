@@ -13,7 +13,6 @@ import types
 import numpy as np
 from . import MLab_coe
 import time
-from . import spline
 import string # AFTER numpy, WHICH HAS ITS OWN split, (and more?)
 
 # If biggles installed allow the plot options in the tests
@@ -423,27 +422,20 @@ def ascend(x):
 def match_resol(xg, yg, xf, method="linear"):
     """ 
     Interpolates and/or extrapolate yg, defined on xg, onto the xf coordinate set.
-    Options are 'linear' or 'spline' (uses spline.py from Johan Hibscham)
     Usage:
-    ygn=match_resol(xg,yg,xf,'spline')
+    ygn=match_resol(xg,yg,xf)
     """
-    if method != "spline":
-        if type(xf) == type(1.):
-            xf = np.array([xf])
-        ng = len(xg)
-        # print argmin(xg[1:]-xg[0:-1]),min(xg[1:]-xg[0:-1]),xg[argmin(xg[1:]-xg[0:-1])]
-        d = old_div((yg[1:] - yg[0:-1]), (xg[1:] - xg[0:-1]))
-        # Get positions of the new x coordinates
-        ind = np.clip(np.searchsorted(xg, xf) - 1, 0, ng - 2)
-        ygn = np.take(yg, ind) + np.take(d, ind) * (xf - np.take(xg, ind))
-        if len(ygn) == 1:
-            ygn = ygn[0]
-        return ygn
-    else:
-        low_slope = old_div((yg[1] - yg[0]), (xg[1] - xg[0]))
-        high_slope = old_div((yg[-1] - yg[-2]), (xg[-1] - xg[-2]))
-        sp = spline.Spline(xg, yg, low_slope, high_slope)
-        return sp(xf)
+    if type(xf) == type(1.):
+        xf = np.array([xf])
+    ng = len(xg)
+    # print argmin(xg[1:]-xg[0:-1]),min(xg[1:]-xg[0:-1]),xg[argmin(xg[1:]-xg[0:-1])]
+    d = old_div((yg[1:] - yg[0:-1]), (xg[1:] - xg[0:-1]))
+    # Get positions of the new x coordinates
+    ind = np.clip(np.searchsorted(xg, xf) - 1, 0, ng - 2)
+    ygn = np.take(yg, ind) + np.take(d, ind) * (xf - np.take(xg, ind))
+    if len(ygn) == 1:
+        ygn = ygn[0]
+    return ygn
 
 
 def overlap(x, y):
