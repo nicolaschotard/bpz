@@ -7,7 +7,6 @@ from __future__ import absolute_import
 from past.utils import old_div
 from . import coetools
 from . import MLab_coe
-from . import coeio
 import string
 
 import pyfits
@@ -99,9 +98,6 @@ def delfile(file, silent=0):
     else:
         if not silent:
             print("CAN'T REMOVE", file, "DOES NOT EXIST.")
-
-
-rmfile = delfile
 
 
 def dirfile(filename, dir=""):
@@ -620,117 +616,6 @@ def loadmachine(filename, dir="", silent=0):
     return cat
 
 
-def loadpymc(filename, dir="", silent=0):
-    filename = dirfile(filename, dir)
-    ind = loaddict(filename + '.ind')
-    i, data = loaddata(filename + '.out+')
-
-    cat = VarsClass()
-    for label in list(ind.keys()):
-        ilo, ihi = ind[label]
-        chunk = data[ilo - 1:ihi]
-        cat.add(label, chunk)
-
-    return cat
-
-
-class Cat2D_xyflip(object):
-    def __init__(self, filename='', dir="", silent=0, labels='x y z'.split()):
-        if len(labels) == 2:
-            labels.append('z')
-        self.labels = labels
-        if filename:
-            if filename[-1] != '+':
-                filename += '+'
-            self.data = loaddata(filename, dir)
-            self.assigndata()
-
-    def assigndata(self):
-        exec('self.%s = self.x = self.data[1:,0]' % self.labels[0])
-        exec('self.%s = self.y = self.data[0,1:]' % self.labels[1])
-        exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
-
-    def get(self, x, y, dointerp=0):
-        ix = MLab_coe.interp(x, self.x, np.arange(len(self.x)))
-        iy = MLab_coe.interp(y, self.y, np.arange(len(self.y)))
-        if not dointerp:  # JUST GET NEAREST
-            ix = MLab_coe.roundint(ix)
-            iy = MLab_coe.roundint(iy)
-            z = self.z[ix, iy]
-        else:
-            z = MLab_coe.bilin2(iy, ix, self.z)
-        return z
-
-
-class Cat2D(object):
-    def __init__(self, filename='', dir="", silent=0, labels='x y z'.split()):
-        if len(labels) == 2:
-            labels.append('z')
-        self.labels = labels
-        if filename:
-            if filename[-1] == '+':
-                filename = filename[:-1]
-            self.data = loaddata(filename, dir)
-            self.assigndata()
-
-    def assigndata(self):
-        exec('self.%s = self.x = self.data[0,1:]' % self.labels[0])
-        exec('self.%s = self.y = self.data[1:,0]' % self.labels[1])
-        exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
-
-    def get(self, x, y, dointerp=0):
-        ix = np.interp(x, self.x, np.arange(len(self.x)))
-        iy = np.interp(y, self.y, np.arange(len(self.y)))
-        if not dointerp:  # JUST GET NEAREST
-            ix = MLab_coe.roundint(ix)
-            iy = MLab_coe.roundint(iy)
-            z = self.z[iy, ix]
-        else:
-            z = MLab_coe.bilin2(ix, iy, self.z)
-        return z
-
-
-def loadcat2d(filename, dir="", silent=0, labels='x y z'):
-    """INPUT: ARRAY w/ SORTED NUMERIC HEADERS (1ST COLUMN & 1ST ROW)
-    OUTPUT: A CLASS WITH RECORDS"""
-    if type(labels) == str:
-        labels = labels.split()
-    outclass = Cat2D(filename, dir, silent, labels)
-    # outclass.z = np.transpose(outclass.z)  # NOW FLIPPING since 12/5/09
-    return outclass
-
-
-def savecat2d(data, x, y, filename, dir="", silent=0):
-    """OUTPUT: FILE WITH data IN BODY AND x & y ALONG LEFT AND TOP"""
-    x = x.np.reshape(1, len(x))
-    data = np.concatenate([x, data])
-    y = np.concatenate([[0], y])
-    y = y.np.reshape(len(y), 1)
-    data = np.concatenate([y, data], 1)
-    if filename[-1] == '+':
-        filename = filename[:-1]
-    savedata(data, filename, dir, header='.')
-
-
-def savecat2d_xyflip(data, x, y, filename, dir="", silent=0):
-    """OUTPUT: FILE WITH data IN BODY AND x & y ALONG LEFT AND TOP"""
-    y = np.reshape(y, (1, len(y)))
-    data = np.concatenate([y, data])
-    x = np.concatenate([[0], x])
-    x = np.reshape(x, (len(x), 1))
-    data = np.concatenate([x, data], 1)
-    if filename[-1] != '+':
-        filename += '+'
-    coeio.savedata1(data, filename, dir)
-
-
-def savedata1d(data, filename, dir="./", format='%6.5e ', header=""):
-    fout = open(filename, 'w')
-    for datum in data:
-        fout.write('%d\n' % datum)
-    fout.close()
-
-
 def loadvars(filename, dir="", silent=0):
     """INPUT: CATALOG w/ LABELED COLUMNS
     OUTPUT: A STRING WHICH WHEN EXECUTED WILL LOAD DATA INTO VARIABLES WITH NAMES THE SAME AS COLUMNS
@@ -1180,110 +1065,3 @@ def loadvarswithclass(filename, dir="", silent=0, labels='', header='', headline
 
 
 loadcat = loadvarswithclass
-
-#################################
-# SExtractor/SExSeg CATALOGS / CONFIGURATION FILES
-
-class SExSegParamsClass(object):
-    def __init__(self, filename='', dir="", silent=0, headlines=0):
-        # CONFIGURATION
-        #   configkeys -- PARAMETERS IN ORDER
-        #   config[key] -- VALUE
-        #   comments[key] -- COMMENTS (IF ANY)
-        # PARAMETERS
-        #   params -- PARAMETERS IN ORDER
-        #   comments[key] -- COMMENTS (IF ANY)
-        self.name = filename
-        self.configkeys = []
-        self.config = {}
-        self.comments = {}
-        self.params = []
-        txt = loadfile(filename, dir, silent)
-        for line in txt:
-            if string.strip(line) and (line[:1] != '#'):
-                # READ FIRST WORD AND DISCARD IT FROM line
-                key = line.split()[0]
-                line = line[len(key):]
-                # READ COMMENT AND DISCARD IT FROM line
-                i = string.find(line, '#')
-                if i > -1:
-                    self.comments[key] = line[i:]
-                    line = line[:i]
-                else:
-                    self.comments[key] = ''
-                # IF ANYTHING IS LEFT, IT'S THE VALUE, AND YOU'VE BEEN READING FROM THE CONFIGURATION SECTION
-                # OTHERWISE IT WAS A PARAMETER (TO BE INCLUDED IN THE SEXTRACTOR CATALOG)
-                line = string.strip(line)
-                if string.strip(line):  # CONFIGURATION
-                    self.configkeys.append(key)
-                    self.config[key] = line
-                else:  # PARAMETERS
-                    self.params.append(key)
-
-    def save(self, name='', header=''):
-        name = name or self.name  # if name then name, else self.name
-        # QUICK CHECK: IF ANY CONFIG PARAMS WERE ADDED TO THE DICT, BUT NOT TO THE LIST:
-        for key in list(self.config.keys()):
-            if key not in self.configkeys:
-                self.configkeys.append(key)
-        # OKAY...
-        fout = open(name, 'w')
-        fout.write('# ----- CONFIGURATION -----\n')
-        for key in self.configkeys:
-            line = ''
-            line += string.ljust(key, 20) + ' '
-            value = self.config[key]
-            comment = self.comments[key]
-            if not comment:
-                line += value
-            else:
-                line += string.ljust(value, 20) + ' '
-                line += comment
-            line += '\n'
-            fout.write(line)
-        fout.write('\n')
-        fout.write('# ----- PARAMETERS -----\n')
-        for param in self.params:
-            line = ''
-            comment = self.comments[param]
-            if not comment:
-                line += param
-            else:
-                line += string.ljust(param, 20) + ' '
-                line += comment
-            line += '\n'
-            fout.write(line)
-        fout.close()
-
-    def merge(self, filename='', dir="", silent=0, headlines=0):
-        self2 = loadsexsegconfig(filename, dir, silent, headlines)
-        for key in self2.configkeys:
-            self.config[key] = self2.config[key]
-        if self2.params:
-            self.params = self2.params
-        for key in list(self2.comments.keys()):
-            if self2.comments[key]:
-                self.comments[key] = self2.comments[key]
-
-
-def loadsexsegconfig(filename='', dir="", silent=0, headlines=0):
-    return SExSegParamsClass(filename, dir, silent, headlines)
-
-
-def loadfits(filename, dir="", index=0):
-    """READS in the data of a .fits file (filename)"""
-    filename = capfile(filename, '.fits')
-    filename = dirfile(filename, dir)
-    if os.path.exists(filename):
-        # CAN'T RETURN data WHEN USING memmap
-        # THE POINTER GETS MESSED UP OR SOMETHING
-        # return pyfits.open(filename, memmap=1)[0].data
-        data = pyfits.open(filename)[index].data
-        # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
-        #if not pyfitsusesnumpy:
-        #data = np.array(data)  # .tolist() ??
-        return np.array(data)
-    else:
-        print()
-        print(filename, "DOESN'T EXIST")
-        # FILE_DOESNT_EXIST[9] = 3
