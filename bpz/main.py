@@ -5,7 +5,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from argparse import ArgumentParser    
+from argparse import ArgumentParser
 from past.utils import old_div
 from . import useful
 rolex = useful.watch()
@@ -17,7 +17,7 @@ import os
 import glob
 import sys
 import time
-import pickle
+#import pickle
 import shelve
 import matplotlib
 matplotlib.use('TkAgg')
@@ -33,7 +33,7 @@ def bpz_run(argv=None):
     bpz: Bayesian Photo-Z estimation
     Reference: Benitez 2000, ApJ, 536, p.571
     Usage:
-    python bpz.py catalog.cat 
+    python bpz.py catalog.cat
     Needs a catalog.columns file which describes the contents of catalog.cat"""
     #description = """Run BPZ."""
     #prog = "bpz.py"
@@ -41,11 +41,11 @@ def bpz_run(argv=None):
     #parser = ArgumentParser(prog=prog, description=description)
     #args = parser.parse_args(argv)
 
-    #print("This will soon run BPZ")   
-    
+    #print("This will soon run BPZ")
+
     def seglist(vals, mask=None):
         """Split vals into lists based on mask > 0"""
-        if mask == None:
+        if mask is None:
             mask = greater(vals, 0)
         lists = []
         i = 0
@@ -60,19 +60,19 @@ def bpz_run(argv=None):
             if mask[i]:
                 list1.append(vals[i])
                 lastgood = True
-    
+
         if lastgood:
             lists.append(list1)
         return lists
-    
+
     # Initialization and definitions#
 
     # Current directory
     homedir = os.getcwd()
-    
+
     # Parameter definition
     pars = useful.params()
-    
+
     pars.d = {
         'SPECTRA': 'CWWSB4.list',  # template list
         #'PRIOR':   'hdfn_SB',      # prior name
@@ -90,9 +90,11 @@ def bpz_run(argv=None):
         # Perform some checks, compare observed colors with templates, etc.
         'CHECK': 'yes',
         'VERBOSE': 'yes',       # Print estimated redshifts to the standard output
-        # Save all the galaxy probability distributions (it will create a very large file)
+        # Save all the galaxy probability distributions (it will create a very
+        # large file)
         'PROBS': 'no',
-        # Save all the galaxy probability distributions P(z,t) (but not priors) -- Compact
+        # Save all the galaxy probability distributions P(z,t) (but not priors)
+        # -- Compact
         'PROBS2': 'no',
         'PROBS_LITE': 'yes',     # Save only the final probability distribution
         'GET_Z': 'yes',         # Actually obtain photo-z
@@ -120,22 +122,13 @@ def bpz_run(argv=None):
         "ADD_CONTINUOUS_PROB": None,
         "NMAX": None  # Useful for testing
     }
-    
-    
+
     if pars.d['PLOTS'] == 'no':
         plots = 0
-    
+
     if plots:
-        # If pylab installed show plots
         plots = 'pylab'
-        try:
-            pylab.plot([1])
-            pylab.title('KILL THIS WINDOW!')
-            pylab.show()
-            pylab.ioff()
-        except:
-            plots = 0
-    
+
     # Define the default values of the parameters
     pars.d['INPUT'] = sys.argv[1]       # catalog with the photometry
     obs_file = pars.d['INPUT']
@@ -143,32 +136,25 @@ def bpz_run(argv=None):
     # column information for the input catalog
     pars.d['COLUMNS'] = root + '.columns'
     pars.d['OUTPUT'] = root + '.bpz'     # output
-    
-    nargs = len(sys.argv)
-    
-    ipar = 2
-    
-    if nargs > 2:  # Check for parameter file and update parameters
+
+    #ipar = 2
+
+    if len(sys.argv) > 2:  # Check for parameter file and update parameters
         if sys.argv[2] == '-P':
             pars.fromfile(sys.argv[3])
-            ipar = 4
+    #        ipar = 4
     pars.d.update(coeio.params_cl())
-    
-    
+
     def updateblank(var, ext):
-#        global pars
+        #        global pars
         if pars.d[var] in [None, 'yes']:
             pars.d[var] = root + '.' + ext
-    
-    
+
     updateblank('CHECK', 'flux_comparison')
     updateblank('PROBS_LITE', 'probs')
     updateblank('PROBS', 'full_probs')
     updateblank('PROBS2', 'chisq')
-    
-    # if pars.d['CHECK'] in [None, 'yes']:
-    #    pars.d['CHECK'] = root+'.flux_comparison'
-    
+
     # This allows to change the auxiliary directories used by BPZ
     if pars.d['SED_DIR'] != bpz_tools.sed_dir:
         print("Changing sed_dir to ", pars.d['SED_DIR'])
@@ -191,7 +177,7 @@ def bpz_run(argv=None):
             fil_dir += '/'
     else:
         fil_dir = pars.d['FILTER_DIR']
-    
+
     # Better safe than sorry
     if pars.d['OUTPUT'] == obs_file or pars.d['PROBS'] == obs_file or pars.d['PROBS2'] == obs_file or pars.d['PROBS_LITE'] == obs_file:
         print("This would delete the input file!")
@@ -199,12 +185,12 @@ def bpz_run(argv=None):
     if pars.d['OUTPUT'] == pars.d['COLUMNS'] or pars.d['PROBS_LITE'] == pars.d['COLUMNS'] or pars.d['PROBS'] == pars.d['COLUMNS']:
         print("This would delete the .columns file!")
         sys.exit()
-    
+
     # Assign the intrinsin rms
     if pars.d['SPECTRA'] == 'CWWSB.list':
         print('Setting the intrinsic rms to 0.067(1+z)')
         pars.d['MIN_RMS'] = 0.067
-    
+
     pars.d['MIN_RMS'] = float(pars.d['MIN_RMS'])
     pars.d['MIN_MAGERR'] = float(pars.d['MIN_MAGERR'])
     if pars.d['INTERACTIVE'] == 'no':
@@ -215,7 +201,7 @@ def bpz_run(argv=None):
         print("Current parameters")
         useful.view_keys(pars.d)
     pars.d['N_PEAKS'] = int(pars.d['N_PEAKS'])
-    if pars.d["ADD_SPEC_PROB"] != None:
+    if pars.d["ADD_SPEC_PROB"] is not None:
         specprob = 1
         specfile = pars.d["ADD_SPEC_PROB"]
         spec = useful.get_2Darray(specfile)
@@ -237,23 +223,22 @@ def bpz_run(argv=None):
     else:
         specprob = 0
     pars.d['DELTA_M_0'] = float(pars.d['DELTA_M_0'])
-    
+
     # Some misc. initialization info useful for the .columns file
     # nofilters=['M_0','OTHER','ID','Z_S','X','Y']
     nofilters = ['M_0', 'OTHER', 'ID', 'Z_S']
-    
+
     # Numerical codes for nondetection, etc. in the photometric catalog
     unobs = -99.  # Objects not observed
     undet = 99.  # Objects not detected
-    
-    
+
     # Define the z-grid
     zmin = float(pars.d['ZMIN'])
     zmax = float(pars.d['ZMAX'])
     if zmin > zmax:
         raise 'zmin < zmax !'
     dz = float(pars.d['DZ'])
-    
+
     linear = 1
     if linear:
         z = np.arange(zmin, zmax + dz, dz)
@@ -267,45 +252,45 @@ def bpz_run(argv=None):
             z = np.array(z)
         else:
             z = np.array([0.])
-    
+
     # Now check the contents of the FILTERS,SED and A diBrectories
-    
+
     # Get the filters in stock
     filters_db = []
     filters_db = glob.glob(fil_dir + '*.res')
     for i in range(len(filters_db)):
         filters_db[i] = os.path.basename(filters_db[i])
         filters_db[i] = filters_db[i][:-4]
-    
+
     # Get the SEDs in stock
     sed_db = []
     sed_db = glob.glob(sed_dir + '*.sed')
     for i in range(len(sed_db)):
         sed_db[i] = os.path.basename(sed_db[i])
         sed_db[i] = sed_db[i][:-4]
-    
+
     # Get the ABflux files in stock
     ab_db = []
     ab_db = glob.glob(ab_dir + '*.AB')
     for i in range(len(ab_db)):
         ab_db[i] = os.path.basename(ab_db[i])
         ab_db[i] = ab_db[i][:-3]
-    
+
     # Get a list with the filter names and check whether they are in stock
     col_file = pars.d['COLUMNS']
     filters = useful.get_str(col_file, 0)
-    
+
     for cosa in nofilters:
         if filters.count(cosa):
             filters.remove(cosa)
-    
+
     if pars.d['EXCLUDE'] != 'none':
         if type(pars.d['EXCLUDE']) == type(' '):
             pars.d['EXCLUDE'] = [pars.d['EXCLUDE']]
         for cosa in pars.d['EXCLUDE']:
             if filters.count(cosa):
                 filters.remove(cosa)
-    
+
     for filter in filters:
         if filter[-4:] == '.res':
             filter = filter[:-4]
@@ -315,27 +300,27 @@ def bpz_run(argv=None):
                 for line in filters_db:
                     print(line)
             sys.exit()
-    
+
     # Get a list with the spectrum names and check whether they're in stock
     # Look for the list in the home directory first,
     # if it's not there, look in the SED directory
     spectra_file = os.path.join(homedir, pars.d['SPECTRA'])
     if not os.path.exists(spectra_file):
         spectra_file = os.path.join(sed_dir, pars.d['SPECTRA'])
-    
+
     spectra = useful.get_str(spectra_file, 0)
     for i in range(len(spectra)):
         if spectra[i][-4:] == '.sed':
             spectra[i] = spectra[i][:-4]
-    
+
     nf = len(filters)
     nt = len(spectra)
     nz = len(z)
-    
+
     # Get the model fluxes
     f_mod = np.zeros((nz, nt, nf)) * 0.
     abfiles = []
-    
+
     for it in range(nt):
         for jf in range(nf):
             if filters[jf][-4:] == '.res':
@@ -356,7 +341,7 @@ def bpz_run(argv=None):
                 # print spectra[it],filters[jf]
                 print('     Generating ', model, '....')
                 ABflux(spectra[it], filtro, madau=pars.d['MADAU'])
-    
+
             zo, f_mod_0 = useful.get_data(model_path, (0, 1))
             # Rebin the data to the required redshift resolution
             f_mod[:, it, jf] = useful.match_resol(zo, f_mod_0, z)
@@ -366,12 +351,12 @@ def bpz_run(argv=None):
                 print('Clipping them to f>=0 values')
                 # To avoid rounding errors in the calculation of the likelihood
                 f_mod[:, it, jf] = np.clip(f_mod[:, it, jf], 0., 1e300)
-        
+
     # Here goes the interpolacion between the colors
     ninterp = int(pars.d['INTERP'])
-    
+
     ntypes = pars.d['NTYPES']
-    if ntypes == None:
+    if ntypes is None:
         nt0 = nt
     else:
         nt0 = list(ntypes)
@@ -389,7 +374,7 @@ def bpz_run(argv=None):
             print('These must add up to the number of templates in the SPECTRA list')
             print('Quitting BPZ.')
             sys.exit()
-    
+
     if ninterp:
         nti = nt + (nt - 1) * ninterp
         buffer = np.zeros((nz, nti, nf)) * 1.
@@ -397,14 +382,15 @@ def bpz_run(argv=None):
         xtipos = np.arange(float(nti))
         for iz in np.arange(nz):
             for jf in range(nf):
-                buffer[iz, :, jf] = useful.match_resol(tipos, f_mod[iz, :, jf], xtipos)
+                buffer[iz, :, jf] = useful.match_resol(
+                    tipos, f_mod[iz, :, jf], xtipos)
         nt = nti
         f_mod = buffer
-    
+
     # Load all the parameters in the columns file to a dictionary
     col_pars = useful.params()
     col_pars.fromfile(col_file)
-    
+
     # Read which filters are in which columns
     flux_cols = []
     eflux_cols = []
@@ -421,14 +407,14 @@ def bpz_run(argv=None):
     zp_offsets = np.array(list(map(float, zp_offsets)))
     if pars.d['ZP_OFFSETS']:
         zp_offsets += np.array(list(map(float, pars.d['ZP_OFFSETS'])))
-    
+
     flux_cols = tuple(flux_cols)
     eflux_cols = tuple(eflux_cols)
-    
+
     # READ the flux and errors from obs_file
     f_obs = useful.get_2Darray(obs_file, flux_cols)
     ef_obs = useful.get_2Darray(obs_file, eflux_cols)
-    
+
     # Convert them to arbitrary fluxes if they are in magnitudes
     if pars.d['MAG'] == 'yes':
         seen = np.greater(f_obs, 0.) * np.less(f_obs, undet)
@@ -447,7 +433,7 @@ def bpz_run(argv=None):
                 if not alltrue(todo[i, :]):
                     print(i + 1, f_obs[i, :], ef_obs[i, :])
             sys.exit()
-    
+
         # Detected objects
         try:
             f_obs = np.where(seen, 10.**(-.4 * f_obs), f_obs)
@@ -460,11 +446,12 @@ def bpz_run(argv=None):
             print('Indexes for maximum values', np.argmax(f_obs, 0.))
             print('Bye.')
             sys.exit()
-    
+
         try:
             ef_obs = np.where(seen, (10.**(.4 * ef_obs) - 1.) * f_obs, ef_obs)
         except OverflowError:
-            print('Some of the input magnitude errors have values which are >700 or <-700')
+            print(
+                'Some of the input magnitude errors have values which are >700 or <-700')
             print('Purge the input photometric catalog')
             print('Minimum value', min(ef_obs))
             print('Maximum value', max(ef_obs))
@@ -472,63 +459,64 @@ def bpz_run(argv=None):
             print('Indexes for maximum values', np.argmax(ef_obs, 0.))
             print('Bye.')
             sys.exit()
-    
+
         # Looked at, but not detected objects (mag=99.)
         # We take the flux equal to zero, and the error in the flux equal to the 1-sigma detection error.
         # If m=99, the corresponding error magnitude column in supposed to be dm=m_1sigma, to avoid errors
         # with the sign we take the absolute value of dm
         f_obs = np.where(no_seen, 0., f_obs)
         ef_obs = np.where(no_seen, 10.**(-.4 * abs(ef_obs)), ef_obs)
-    
+
         # Objects not looked at (mag=-99.)
         f_obs = np.where(no_observed, 0., f_obs)
         ef_obs = np.where(no_observed, 0., ef_obs)
-    
-    
+
     # Flux codes:
     # If f>0 and ef>0 : normal objects
     # If f==0 and ef>0 :object not detected
     # If f==0 and ef==0: object not observed
     # Everything else will crash the program
-    
+
     # Check that the observed error fluxes are reasonable
     #if sometrue(np.less(ef_obs,0.)): raise 'Negative input flux errors'
     if np.less(ef_obs, 0.).any():
         raise 'Negative input flux errors'
-    
+
     f_obs = np.where(np.less(f_obs, 0.), 0., f_obs)  # Put non-detections to 0
     ef_obs = np.where(np.less(f_obs, 0.), np.maximum(1e-100, f_obs + ef_obs),
-                   ef_obs)  # Error equivalent to 1 sigma upper limit
-    
+                      ef_obs)  # Error equivalent to 1 sigma upper limit
+
     #if sometrue(np.less(f_obs,0.)) : raise 'Negative input fluxes'
     seen = np.greater(f_obs, 0.) * np.greater(ef_obs, 0.)
     no_seen = np.equal(f_obs, 0.) * np.greater(ef_obs, 0.)
     no_observed = np.equal(f_obs, 0.) * np.equal(ef_obs, 0.)
-    
+
     todo = seen + no_seen + no_observed
     if np.add.reduce(np.add.reduce(todo)) != todo.shape[0] * todo.shape[1]:
         print('Objects with unexpected fluxes/errors')
-    
+
     # Convert (internally) objects with zero flux and zero error(non observed)
     # to objects with almost infinite (~1e108) error and still zero flux
     # This will yield reasonable likelihoods (flat ones) for these objects
     ef_obs = np.where(no_observed, 1e108, ef_obs)
-    
+
     # Include the zero point errors
     zp_errors = np.array(list(map(float, zp_errors)))
     zp_frac = bpz_tools.e_mag2frac(zp_errors)
     # zp_frac=10.**(.4*zp_errors)-1.
-    ef_obs = np.where(seen, np.sqrt(ef_obs * ef_obs + (zp_frac * f_obs)**2), ef_obs)
+    ef_obs = np.where(seen, np.sqrt(
+        ef_obs * ef_obs + (zp_frac * f_obs)**2), ef_obs)
     ef_obs = np.where(no_seen, np.sqrt(ef_obs * ef_obs +
-                                 (zp_frac * (old_div(ef_obs, 2.)))**2), ef_obs)
-    
+                                       (zp_frac * (old_div(ef_obs, 2.)))**2), ef_obs)
+
     # Add the zero-points offset
     # The offsets are defined as m_new-m_old
     zp_offsets = np.array(list(map(float, zp_offsets)))
-    zp_offsets = np.where(np.not_equal(zp_offsets, 0.), 10.**(-.4 * zp_offsets), 1.)
+    zp_offsets = np.where(np.not_equal(zp_offsets, 0.),
+                          10.**(-.4 * zp_offsets), 1.)
     f_obs = f_obs * zp_offsets
     ef_obs = ef_obs * zp_offsets
-    
+
     # Convert fluxes to AB if needed
     for i in range(f_obs.shape[1]):
         if cals[i] == 'Vega':
@@ -540,13 +528,13 @@ def bpz_run(argv=None):
         else:
             print('AB or Vega?. Check ' + col_file + ' file')
             sys.exit()
-    
+
     # Get m_0 (if present)
     if 'M_0' in col_pars.d:
         m_0_col = int(col_pars.d['M_0']) - 1
         m_0 = useful.get_data(obs_file, m_0_col)
         m_0 += pars.d['DELTA_M_0']
-    
+
     # Get the objects ID (as a string)
     if 'ID' in col_pars.d:
         #    print col_pars.d['ID']
@@ -554,12 +542,12 @@ def bpz_run(argv=None):
         id = useful.get_str(obs_file, id_col)
     else:
         id = list(map(str, list(range(1, len(f_obs[:, 0]) + 1))))
-    
+
     # Get spectroscopic redshifts (if present)
     if 'Z_S' in col_pars.d:
         z_s_col = int(col_pars.d['Z_S']) - 1
         z_s = useful.get_data(obs_file, z_s_col)
-    
+
     # Get the X,Y coordinates
     if 'X' in col_pars.d:
         datos = col_pars.d['X']
@@ -571,11 +559,11 @@ def bpz_run(argv=None):
         if len(datos) == 1:  # OTHERWISE IT'S A FILTER!
             y_col = int(datos) - 1
             y = useful.get_data(obs_file, y_col)
-    
+
     # If 'check' on, initialize some variables
     check = pars.d['CHECK']
     checkSED = check != 'no'
-    
+
     ng = f_obs.shape[0]
     if checkSED:
         # PHOTOMETRIC CALIBRATION CHECK
@@ -583,9 +571,9 @@ def bpz_run(argv=None):
         frat = np.ones((ng, nf), float)
         dmag = np.ones((ng, nf), float)
         fw = np.zeros((ng, nf), float)
-    
+
     # Visualize the colors of the galaxies and the templates
-    
+
     # When there are spectroscopic redshifts available
     if interactive and 'Z_S' in col_pars.d and plots and checkSED and ask('Plot colors vs spectroscopic redshifts?'):
         color_m = np.zeros((nz, nt, nf - 1)) * 1.
@@ -620,7 +608,7 @@ def bpz_run(argv=None):
             pylab.ylabel('%s - %s' % (filters[i], filters[i + 1]))
         pylab.show()
         inp = input('Hit Enter to continue.')
-    
+
     # Get other information which will go in the output file (as strings)
     if 'OTHER' in col_pars.d:
         if col_pars.d['OTHER'] != 'all':
@@ -632,11 +620,12 @@ def bpz_run(argv=None):
             other_cols = [x - 1 for x in other_cols]
             n_other = len(other_cols)
         else:
-            n_other = useful.get_2Darray(obs_file, cols='all', nrows=1).shape[1]
+            n_other = useful.get_2Darray(
+                obs_file, cols='all', nrows=1).shape[1]
             other_cols = list(range(n_other))
-    
+
         others = useful.get_str(obs_file, other_cols)
-    
+
         if len(other_cols) > 1:
             other = []
             for j in range(len(others[0])):
@@ -646,43 +635,43 @@ def bpz_run(argv=None):
                 other.append(''.join(lista))
         else:
             other = others
-    
-    
+
     if pars.d['GET_Z'] == 'no':
         get_z = 0
     else:
         get_z = 1
-    
+
     # Prepare the output file
     out_name = pars.d['OUTPUT']
     if get_z:
         if os.path.exists(out_name):
             os.system('cp %s %s.bak' % (out_name, out_name))
-            print("File %s exists. Copying it to %s.bak" % (out_name, out_name))
+            print("File %s exists. Copying it to %s.bak" %
+                  (out_name, out_name))
         output = open(out_name, 'w')
-    
+
     if pars.d['PROBS_LITE'] == 'no':
         save_probs = 0
     else:
         save_probs = 1
-    
+
     if pars.d['PROBS'] == 'no':
         save_full_probs = 0
     else:
         save_full_probs = 1
-    
+
     if pars.d['PROBS2'] == 'no':
         save_probs2 = 0
     else:
         save_probs2 = 1
-    
+
     # Include some header information
-    
+
     #   File name and the date...
     time_stamp = time.ctime(time.time())
     if get_z:
         output.write('## File ' + out_name + '  ' + time_stamp + '\n')
-    
+
     # and also the parameters used to run bpz...
     if get_z:
         output.write("""##
@@ -698,23 +687,23 @@ def bpz_run(argv=None):
             cosa = str(pars.d[key])
         if get_z:
             output.write('##' + key.upper() + '=' + cosa + '\n')
-    
+
     if save_full_probs:
         # Shelve some info on the run
         full_probs = shelve.open(pars.d['PROBS'])
         full_probs['TIME'] = time_stamp
         full_probs['PARS'] = pars.d
-    
+
     if save_probs:
         probs = open(pars.d['PROBS_LITE'], 'w')
         probs.write('# ID  p_bayes(z)  where z=arange(%.4f,%.4f,%.4f) \n' %
                     (zmin, zmax + dz, dz))
-    
+
     if save_probs2:
         probs2 = open(pars.d['PROBS2'], 'w')
         probs2.write(
             '# id t  z1    P(z1) P(z1+dz) P(z1+2*dz) ...  where dz = %.4f\n' % dz)
-    
+
     # Use a empirical prior?
     tipo_prior = pars.d['PRIOR']
     useprior = 0
@@ -724,7 +713,7 @@ def bpz_run(argv=None):
         has_mags = 0
     if has_mags and tipo_prior != 'none' and tipo_prior != 'flat':
         useprior = 1
-    
+
     # Add cluster 'spikes' to the prior?
     cluster_prior = 0.
     if pars.d['ZC']:
@@ -737,7 +726,7 @@ def bpz_run(argv=None):
             fc = np.array([float(pars.d['FC'])])
         else:
             fc = np.array(list(map(float, pars.d['FC'])))
-    
+
         fcc = np.add.reduce(fc)
         if fcc > 1.:
             print(ftc)
@@ -753,25 +742,24 @@ def bpz_run(argv=None):
             g = exp(exponente) * cluster_range
             norm = np.add.reduce(g)
             pi_c[:, 0] = pi_c[:, 0] + g / norm * fc[i]
-    
+
         # Go over the different types
         print('We only apply the cluster prior to the early type galaxies')
         for i in range(1, 3 + 2 * ninterp):
             pi_c[:, i] = pi_c[:, i] + pi_c[:, 0]
-    
-    
+
     # Output format
     format = '%' + repr(np.maximum(5, len(id[0]))) + 's'  # ID format
     format = format + pars.d['N_PEAKS'] * \
         ' %.3f %.3f  %.3f %.3f %.5f' + ' %.3f %.3f %10.3f'
-    
+
     # Add header with variable names to the output file
     sxhdr = """##
 ##Column information
 ##
 # 1 ID"""
     k = 1
-    
+
     if pars.d['N_PEAKS'] > 1:
         for j in range(pars.d['N_PEAKS']):
             sxhdr += """
@@ -789,12 +777,12 @@ def bpz_run(argv=None):
 # %i T_B
 # %i ODDS""" % (k + 1, k + 2, k + 3, k + 4, k + 5)
         k += 5
-    
+
     sxhdr += """    
 # %i Z_ML
 # %i T_ML
 # %i CHI-SQUARED\n""" % (k + 1, k + 2, k + 3)
-    
+
     nh = k + 4
     if 'Z_S' in col_pars.d:
         sxhdr = sxhdr + '# %i Z_S\n' % nh
@@ -808,31 +796,31 @@ def bpz_run(argv=None):
         sxhdr = sxhdr + '# %i OTHER\n' % nh
         format = format + ' %s'
         nh += n_other
-    
+
     # print sxhdr
-    
+
     if get_z:
         output.write(sxhdr + '##\n')
-    
+
     odds_i = float(pars.d['ODDS'])
     oi = useful.inv_gauss_int(odds_i)
-    
+
     print(odds_i, oi)
-    
-    # Proceed to redshift estimation    
-    
+
+    # Proceed to redshift estimation
+
     if checkSED:
         buffer_flux_comparison = ""
-    
+
     if pars.d['CONVOLVE_P'] == 'yes':
         # Will Convolve with a dz=0.03 gaussian to make probabilities smoother
         # This is necessary; if not there are too many close peaks
         sigma_g = 0.03
         x = np.arange(-3. * sigma_g, 3. * sigma_g +
-                   old_div(dz, 10.), dz)  # made symmetric --DC
+                      old_div(dz, 10.), dz)  # made symmetric --DC
         gaus = np.exp(-(old_div(x, sigma_g))**2)
-    
-    if pars.d["NMAX"] != None:
+
+    if pars.d["NMAX"] is not None:
         ng = int(pars.d["NMAX"])
     for ig in range(ng):
         # Don't run BPZ on galaxies with have z_s > z_max
@@ -844,14 +832,14 @@ def bpz_run(argv=None):
         else:
             likelihood = bpz_tools.p_c_z_t(
                 f_obs[ig, :nf], ef_obs[ig, :nf], f_mod[:nz, :nt, :nf])
-    
+
         iz_ml = likelihood.i_z_ml
         t_ml = likelihood.i_t_ml
         red_chi2 = old_div(likelihood.min_chi2, float(nf - 1.))
         p = likelihood.likelihood
         if not ig:
             print('ML * prior -- NOT QUITE BAYESIAN')
-    
+
         if pars.d['ONLY_TYPE'] == 'yes':  # Use only the redshift information, no priors
             p_i = np.zeros((nz, nt)) * 1.
             j = searchsorted(z, z_s[ig])
@@ -860,41 +848,43 @@ def bpz_run(argv=None):
         else:
             if useprior:
                 if pars.d['PRIOR'] == 'lensing':
-                    p_i = bpz_tools.prior(z, m_0[ig], tipo_prior, nt0, ninterp, x[ig], y[ig])
+                    p_i = bpz_tools.prior(
+                        z, m_0[ig], tipo_prior, nt0, ninterp, x[ig], y[ig])
                 else:
                     p_i = bpz_tools.prior(z, m_0[ig], tipo_prior, nt0, ninterp)
             else:
                 p_i = old_div(np.ones((nz, nt), float), float(nz * nt))
             if cluster_prior:
                 p_i = (1. - fcc) * p_i + pi_c
-    
+
         if save_full_probs:
             full_probs[id[ig]] = [z, p_i[:nz, :nt], p[:nz, :nt], red_chi2]
-    
+
         # Multiply the prior by the likelihood to find the final probability
         pb = p_i[:nz, :nt] * p[:nz, :nt]
-    
+
         # Convolve with a gaussian of width \sigma(1+z) to take into
         # accout the intrinsic scatter in the redshift estimation 0.06*(1+z)
         #(to be done)
-    
+
         # Estimate the bayesian quantities
         p_bayes = np.add.reduce(pb[:nz, :nt], -1)
-    
+
         # Convolve with a gaussian
         if pars.d['CONVOLVE_P'] == 'yes' and pars.d['ONLY_TYPE'] == 'no':
             p_bayes = np.convolve(p_bayes, gaus, 1)
-    
+
         # Eliminate all low level features in the prob. distribution
         pmax = max(p_bayes)
         p_bayes = np.where(
             np.greater(p_bayes, pmax * float(pars.d['P_MIN'])), p_bayes, 0.)
-    
+
         norm = np.add.reduce(p_bayes)
         p_bayes = old_div(p_bayes, norm)
-    
+
         if specprob:
-            p_spec[ig, :] = useful.match_resol(z, p_bayes, z_spec[ig, :]) * p_spec[ig, :]
+            p_spec[ig, :] = useful.match_resol(
+                z, p_bayes, z_spec[ig, :]) * p_spec[ig, :]
             norma = np.add.reduce(p_spec[ig, :])
             if norma == 0.:
                 norma = 1.
@@ -908,23 +898,23 @@ def bpz_run(argv=None):
             formato += "\n"
             print(formato % vyjod)
             specout.write(formato % vyjod)
-    
+
         if pars.d['N_PEAKS'] > 1:
             # Identify  maxima and minima in the final probability
             g_max = np.less(p_bayes[2:], p_bayes[1:-1]) * \
                 np.less(p_bayes[:-2], p_bayes[1:-1])
             g_min = np.greater(p_bayes[2:], p_bayes[1:-1]) * \
                 np.greater(p_bayes[:-2], p_bayes[1:-1])
-    
+
             g_min += np.equal(p_bayes[1:-1], 0.) * np.greater(p_bayes[2:], 0.)
             g_min += np.equal(p_bayes[1:-1], 0.) * np.greater(p_bayes[:-2], 0.)
-    
+
             i_max = compress(g_max, np.arange(nz - 2)) + 1
             i_min = compress(g_min, np.arange(nz - 2)) + 1
-    
+
             # Check that the first point and the last one are not minima or maxima,
             # if they are, add them to the index arrays
-    
+
             if p_bayes[0] > p_bayes[1]:
                 i_max = concatenate([[0], i_max])
                 i_min = concatenate([[0], i_min])
@@ -935,7 +925,7 @@ def bpz_run(argv=None):
                 i_min = concatenate([[0], i_min])
             if p_bayes[-1] < p_bayes[-2]:
                 i_min = concatenate([i_min, [nz - 1]])
-    
+
             p_max = take(p_bayes, i_max)
             # p_min=take(p_bayes,i_min)
             p_tot = []
@@ -947,16 +937,17 @@ def bpz_run(argv=None):
             # Assign minima to each maximum
             jm = searchsorted(i_min, i_max)
             p_max = list(p_max)
-    
+
             for i in range(len(i_max)):
-                z_peaks.append([z[i_max[i]], z[i_min[jm[i] - 1]], z[i_min[jm[i]]]])
+                z_peaks.append(
+                    [z[i_max[i]], z[i_min[jm[i] - 1]], z[i_min[jm[i]]]])
                 t_peaks.append(np.argmax(pb[i_max[i], :nt]))
                 p_tot.append(np.sum(p_bayes[i_min[jm[i] - 1]:i_min[jm[i]]]))
                 # print z_peaks[-1][0],f_mod[i_max[i],t_peaks[-1]-1,:nf]
-    
+
             if ninterp:
                 t_peaks = list(old_div(np.array(t_peaks), (1. + ninterp)))
-    
+
             if pars.d['MERGE_PEAKS'] == 'yes':
                 # Merge peaks which are very close 0.03(1+z)
                 merged = []
@@ -964,7 +955,8 @@ def bpz_run(argv=None):
                     for j in range(len(z_peaks)):
                         if j > k and k not in merged and j not in merged:
                             if abs(z_peaks[k][0] - z_peaks[j][0]) < 0.06 * (1. + z_peaks[j][0]):
-                                # Modify the element which receives the accretion
+                                # Modify the element which receives the
+                                # accretion
                                 z_peaks[k][1] = np.minimum(
                                     z_peaks[k][1], z_peaks[j][1])
                                 z_peaks[k][2] = np.maximum(
@@ -972,7 +964,7 @@ def bpz_run(argv=None):
                                 p_tot[k] += p_tot[j]
                                 # Put the merged element in the list
                                 merged.append(j)
-    
+
                 # Clean up
                 copia = p_tot[:]
                 for j in merged:
@@ -986,49 +978,49 @@ def bpz_run(argv=None):
                 copia = p_max[:]
                 for j in merged:
                     p_max.remove(copia[j])
-    
+
             if np.sum(np.array(p_tot)) != 1.:
                 p_tot = old_div(np.array(p_tot), np.sum(np.array(p_tot)))
-    
+
         # Define the peak
         iz_b = np.argmax(p_bayes)
         zb = z[iz_b]
         # OKAY, NOW THAT GAUSSIAN CONVOLUTION BUG IS FIXED
         # if pars.d['ONLY_TYPE']=='yes': zb=zb-dz/2. #This corrects a small bias
         # else: zb=zb-dz #This corrects another small bias --DC
-    
+
         # Integrate within a ~ oi*sigma interval to estimate
         # the odds. (based on a sigma=pars.d['MIN_RMS']*(1+z))
         # Look for the number of sigma corresponding
         # to the odds_i confidence limit
-    
+
         zo1 = zb - oi * pars.d['MIN_RMS'] * (1. + zb)
         zo2 = zb + oi * pars.d['MIN_RMS'] * (1. + zb)
         if pars.d['Z_THR'] > 0:
             zo1 = float(pars.d['Z_THR'])
             zo2 = float(pars.d['ZMAX'])
         o = bpz_tools.odds(p_bayes[:nz], z, zo1, zo2)
-    
+
         # Integrate within the same odds interval to find the type
         # izo1=np.maximum(0,searchsorted(z,zo1)-1)
         # izo2=np.minimum(nz,searchsorted(z,zo2))
         # t_b=np.argmax(np.add.reduce(p[izo1:izo2,:nt],0))
-    
+
         it_b = np.argmax(pb[iz_b, :nt])
         t_b = it_b + 1
-    
+
         if ninterp:
             tt_b = old_div(float(it_b), (1. + ninterp))
             tt_ml = old_div(float(t_ml), (1. + ninterp))
         else:
             tt_b = it_b
             tt_ml = t_ml
-    
+
         if max(pb[iz_b, :]) < 1e-300:
             print('NO CLEAR BEST t_b; ALL PROBABILITIES ZERO')
             t_b = -1.
             tt_b = -1.
-    
+
         # Redshift confidence limits
         z1, z2 = bpz_tools.interval(p_bayes[:nz], z, odds_i)
         if pars.d['PHOTO_ERRORS'] == 'no':
@@ -1038,9 +1030,9 @@ def bpz_run(argv=None):
                 z1 = np.maximum(0., zo1)
             if zo2 > z2:
                 z2 = zo2
-    
+
         # Print output
-    
+
         if pars.d['N_PEAKS'] == 1:
             salida = [id[ig], zb, z1, z2, tt_b + 1,
                       o, z[iz_ml], tt_ml + 1, red_chi2]
@@ -1048,25 +1040,26 @@ def bpz_run(argv=None):
             salida = [id[ig]]
             for k in range(pars.d['N_PEAKS']):
                 if k <= len(p_tot) - 1:
-                    salida = salida + list(z_peaks[k]) + [t_peaks[k] + 1, p_tot[k]]
+                    salida = salida + \
+                        list(z_peaks[k]) + [t_peaks[k] + 1, p_tot[k]]
                 else:
                     salida += [-1., -1., -1., -1., -1.]
             salida += [z[iz_ml], tt_ml + 1, red_chi2]
-    
+
         if 'Z_S' in col_pars.d:
             salida.append(z_s[ig])
         if has_mags:
             salida.append(m_0[ig] - pars.d['DELTA_M_0'])
         if 'OTHER' in col_pars.d:
             salida.append(other[ig])
-    
+
         if get_z:
             output.write(format % tuple(salida) + '\n')
         if pars.d['VERBOSE'] == 'yes':
             print(format % tuple(salida))
-    
+
         odd_check = odds_i
-    
+
         if checkSED:
             ft = f_mod[iz_b, it_b, :]
             fo = f_obs[ig, :]
@@ -1077,11 +1070,11 @@ def bpz_run(argv=None):
             fot = np.add.reduce(fo * factor)
             am = old_div(fot, ftt)
             ft = ft * am
-        
+
             flux_comparison = [id[ig], m_0[ig], z[iz_b],
                                t_b, am] + list(np.concatenate([ft, fo, efo]))
             nfc = len(flux_comparison)
-    
+
             format_fc = '%s  %.2f  %.2f   %i' + (nfc - 4) * '   %.3e' + '\n'
             buffer_flux_comparison = buffer_flux_comparison + \
                 format_fc % tuple(flux_comparison)
@@ -1095,12 +1088,12 @@ def bpz_run(argv=None):
                 #fw[ig,:] = np.greater(fo, 0)
                 fw[ig, :] = MLab_coe.divsafe(fo, efo, inf=1e8, nan=0)
                 fw[ig, :] = np.clip(fw[ig, :], 0, 100)
-    
+
         if save_probs:
             texto = '%s ' % str(id[ig])
             texto += len(p_bayes) * '%.3e ' + '\n'
             probs.write(texto % tuple(p_bayes))
-    
+
         # pb[z,t] -> p_bayes[z]
         # 1. tb are summed over
         # 2. convolved with Gaussian if CONVOLVE_P
@@ -1122,13 +1115,13 @@ def bpz_run(argv=None):
                                  (id[ig], itb + 1, zlists[i][0]))
                     fmt = len(chisqlists[i]) * '%4.2f ' + '\n'
                     probs2.write(fmt % tuple(chisqlists[i]))
-  
+
     if checkSED:
         open(pars.d['CHECK'], 'w').write(buffer_flux_comparison)
-    
+
     if get_z:
         output.close()
-    
+
     if checkSED:
         if interactive:
             print("")
@@ -1136,7 +1129,7 @@ def bpz_run(argv=None):
             print("PHOTOMETRIC CALIBRATION TESTS")
             fratavg = old_div(np.sum(fw * frat, axis=0), np.sum(fw, axis=0))
             dmavg = - bpz_tools.flux2mag(fratavg)
-            fnobj = np.sum(np.greater(fw, 0), axis=0)                
+            fnobj = np.sum(np.greater(fw, 0), axis=0)
             print(
                 "If the dmag are large, add them to the .columns file (zp_offset), then re-run BPZ.")
             print(
@@ -1152,19 +1145,18 @@ def bpz_run(argv=None):
                 "dmag = magnitude offset which should be applied (added) to the photometry (zp_offset)")
             print(
                 "nobj = # of galaxies considered in that filter (detected and high ODDS >= %g)" % odd_check)
-    
+
         if save_full_probs:
             full_probs.close()
         if save_probs:
             probs.close()
         if save_probs2:
             probs2.close()
-    
-    
+
     if plots and checkSED:
         zb, zm, zb1, zb2, o, tb = useful.get_data(out_name, (1, 6, 2, 3, 5, 4))
         # Plot the comparison between z_spec and z_B
-    
+
         if 'Z_S' in col_pars.d:
             if not interactive or ask('Compare z_B vs z_spec?'):
                 good = np.less(z_s, 9.99)
@@ -1176,13 +1168,14 @@ def bpz_run(argv=None):
                     good *= np.greater_equal(o, od_th)
                     t_min = eval(input('Minimum spectral type\n'))
                     t_max = eval(input('Maximum spectral type\n'))
-                    good *= np.less_equal(tb, t_max) * np.greater_equal(tb, t_min)
+                    good *= np.less_equal(tb, t_max) * \
+                        np.greater_equal(tb, t_min)
                     if has_mags:
                         mg_min = eval(input('Bright magnitude limit?\n'))
                         mg_max = eval(input('Faint magnitude limit?\n'))
                         good = good * np.less_equal(m_0, mg_max) * \
                             np.greater_equal(m_0, mg_min)
-    
+
                 zmo, zso, zbo, zb1o, zb2o, tb = useful.multicompress(
                     good, (zm, z_s, zb, zb1, zb2, tb))
                 print('Number of objects with odds > %.2f= %i ' %
@@ -1198,7 +1191,6 @@ def bpz_run(argv=None):
                 print('Number of catastrophic outliers [dz >1]=', n_catast)
                 print('Delta z/(1+z) = %.4f +- %.4f' % (sz.median, sz.rms))
                 if interactive and plots:
-                    #if plots == 'pylab':
                     pylab.figure(2)
                     pylab.subplot(211)
                     pylab.plot(np.arange(min(zso), max(zso) + 0.01, 0.01),
@@ -1213,7 +1205,7 @@ def bpz_run(argv=None):
                     pylab.xlabel(r'$z_{spec}$')
                     pylab.ylabel(r'$z_{ML}$')
                     pylab.show()
-    
+
     rolex.check()
 
 
@@ -1221,39 +1213,40 @@ def bpz_finalize(argv=None):
 
     # python bpzchisq2run.py ACS-Subaru
     # PRODUCES ACS-Subaru_bpz.cat
-    
+
     # ADDS A FEW THINGS TO THE BPZ CATALOG
     # INCLUDING chisq2 AND LABEL HEADERS
-    
+
     # ~/p/bpzchisq2run.py NOW INCLUDED!
     # ~/Tonetti/colorpro/bpzfinalize7a.py
     # ~/UDF/Elmegreen/phot8/bpzfinalize7.py
     # ~/UDF/bpzfinalize7a.py, 7, 5, 4, 23_djh, 23, 3
-    
+
     # NOW TAKING BPZ OUTPUT w/ 3 REDSHIFT PEAKS
     # ALSO USING NEW i-band CATALOG istel.cat -- w/ CORRECT IDs
-    
-    # python bpzfinalize.py bvizjh_cut_sexseg2_allobjs_newres_offset3_djh_Burst_1M
-    
+
+    # python bpzfinalize.py
+    # bvizjh_cut_sexseg2_allobjs_newres_offset3_djh_Burst_1M
+
     ##################
     # add nf, jhgood, stellarity, x, y
-    
+
     inbpz = coeio.capfile(sys.argv[1], 'bpz')
     inroot = inbpz[:-4]
-    
+
     infile = coeio.loadfile(inbpz)
     for line in infile:
         if line[:7] == '##INPUT':
             incat = line[8:]
             break
-    
+
     for line in infile:
         if line[:9] == '##N_PEAKS':
             npeaks = int(line[10])
             break
-    
+
     outbpz = inroot + '_bpz.cat'
-    
+
     if npeaks == 1:
         labels = 'id   zb   zbmin  zbmax  tb    odds    zml   tml  chisq'.split()
     elif npeaks == 3:
@@ -1261,9 +1254,9 @@ def bpz_finalize(argv=None):
     else:
         print('N_PEAKS = %d!?' % npeaks)
         sys.exit(1)
-    
+
     labelnicks = {'Z_S': 'zspec', 'M_0': 'M0'}
-    
+
     read = 0
     ilabel = 0
     for iline in range(len(infile)):
@@ -1278,17 +1271,17 @@ def bpz_finalize(argv=None):
             label = line.split()[-1]
             if ilabel >= 10:
                 labels.append(labelnicks.get(label, label))
-    
+
     mybpz = coeio.loadvarswithclass(inbpz, labels=labels)
-    
+
     mycat = coeio.loadvarswithclass(incat)
-    
+
     #################################
     # CHISQ2, nfdet, nfobs
-    
+
     if os.path.exists(inroot + '.flux_comparison'):
         data = coeio.loaddata(inroot + '.flux_comparison+')
-    
+
         #nf = 6
         nf = old_div((len(data) - 5), 3)
         # id  M0  zb  tb*3
@@ -1296,24 +1289,26 @@ def bpz_finalize(argv=None):
         ft = data[5:5 + nf]  # FLUX (from spectrum for that TYPE)
         fo = data[5 + nf:5 + 2 * nf]  # FLUX (OBSERVED)
         efo = data[5 + 2 * nf:5 + 3 * nf]  # FLUX_ERROR (OBSERVED)
-    
+
         # chisq 2
         eft = old_div(ft, 15.)
-        eft = np.max(eft, axis=0)  # for each galaxy, take max eft among filters
+        # for each galaxy, take max eft among filters
+        eft = np.max(eft, axis=0)
         ef = np.sqrt(efo**2 + eft**2)  # (6, 18981) + (18981) done correctly
 
         dfosq = (old_div((ft - fo), ef)) ** 2
         dfosqsum = np.add.reduce(dfosq)
         detected = np.greater(fo, 0)
         nfdet = np.add.reduce(detected)
-    
+
         observed = np.less(efo, 1)
         nfobs = np.add.reduce(observed)
-    
+
         # DEGREES OF FREEDOM
         dof = MLab_coe.clip2(nfobs - 3., 1, None)  # 3 params (z, t, a)
         chisq2clip = old_div(dfosqsum, dof)
-        sedfrac = MLab_coe.divsafe(np.max(fo - efo, axis=0), np.max(ft, axis=0), -1)  # SEDzero
+        sedfrac = MLab_coe.divsafe(
+            np.max(fo - efo, axis=0), np.max(ft, axis=0), -1)  # SEDzero
 
         chisq2 = chisq2clip[:]
         chisq2 = np.where(np.less(sedfrac, 1e-10), 900., chisq2)
@@ -1321,11 +1316,11 @@ def bpz_finalize(argv=None):
         chisq2 = np.where(np.equal(nfobs, 0), 999., chisq2)
 
         #################################
-    
+
         mybpz.add('chisq2', chisq2)
         mybpz.add('nfdet', nfdet)
         mybpz.add('nfobs', nfobs)
-    
+
     if 'stel' in mycat.labels:
         mybpz.add('stel', mycat.stel)
     elif 'stellarity' in mycat.labels:
@@ -1334,7 +1329,7 @@ def bpz_finalize(argv=None):
         mybpz.add('sig', mycat.maxsigisoaper)
     if 'sig' in mycat.labels:
         mybpz.assign('sig', mycat.maxsigisoaper)
-    
+
     if 'zspec' not in mybpz.labels:
         if 'zspec' in mycat.labels:
             mybpz.add('zspec', mycat.zspec)
