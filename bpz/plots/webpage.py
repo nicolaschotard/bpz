@@ -60,7 +60,6 @@ def sedplots(cat, root, outdir, redo=False):
     redo = redo in [True, 'sed']
     b.flux_comparison_plots(show_plots=0, save_plots='png', colors={
     }, nomargins=0, outdir=outdir, redo=redo)
-    #os.system('\mv %s_sed_*.png %s' % (root, outdir))
 
 
 def probplots(cat, root, outdir, zmax=7, redo=False):
@@ -73,11 +72,8 @@ def probplots(cat, root, outdir, zmax=7, redo=False):
     ids = cat.get('segmid', cat.id).round().astype(int)
     redo = redo in [True, 'prob']
     for i in range(cat.len()):
-        id = ids[i]
-        probplot.probplot(root, id, zmax=zmax, nomargins=0,
+        probplot.probplot(root, ids[i], zmax=zmax, nomargins=0,
                           outdir=outdir, redo=redo)
-
-    #os.system('\mv probplot*png ' + outdir)
 
 
 def webpage(cat, bpzroot, outfile, ncolor=1, idfac=1.):
@@ -88,17 +84,14 @@ def webpage(cat, bpzroot, outfile, ncolor=1, idfac=1.):
     coloraddons = coloraddons[:ncolor]
 
     bpzpath = os.environ.get('BPZPATH')
-    inroll = os.path.join(bpzpath, 'plots')
     fout.write('\n')
     fout.write('<h1>BPZ results for %s.cat</h1>\n\n' % bpzroot)
     ids = cat.id.round().astype(int)
     segmids = cat.get('segmid', ids).round().astype(int)
     for i in range(cat.len()):
-        id = ids[i]
         segmid = segmids[i]
-        id2 = id * idfac
+        id2 = ids[i] * idfac
         fout.write('Object #%s' % str(int(id2))) #num2str(id2))
-        # fout.write('Object #%d' % id)
         if 'zb' in cat.labels:
             fout.write(' &nbsp; BPZ = %.2f' % cat.zb[i])
         if ('zbmin' in cat.labels) and ('zbmax' in cat.labels):
@@ -175,24 +168,19 @@ def run():
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    idfac = params.get('IDFAC', 1.)
-
-    zmax = params.get('ZMAX', 7.)
-
     redo = params.get('REDO', False)
-    if redo == None:
+    if redo is None:
         redo = True
 
     ltrs = list(string.ascii_lowercase)
     ltrs[0] = ''
 
-    colorfiles = []
-
     sedplots(mycat, bpzroot, os.path.join(outdir, 'sedplots'), redo=redo)  # id
     probplots(mycat, bpzroot, os.path.join(outdir, 'probplots'),
-              zmax=zmax, redo=redo)  # id
+              zmax=params.get('ZMAX', 7.), redo=redo)  # id
+    # id segmid
     webpage(mycat, bpzroot, os.path.join(outdir, 'index.html'),
-            len(colorfiles), idfac=idfac)  # id segmid
+            0, idfac=params.get('IDFAC', 1.))
 
 
 if __name__ == '__main__':

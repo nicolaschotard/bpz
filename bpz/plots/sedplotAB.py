@@ -337,7 +337,6 @@ class bpzPlots(object):
             else:
                 print('OBSERVED FIT MINIZED & COMPRIMISED!!')
 
-            black = 'grey60'
 
             xrange = MLab_coe.prange(lambda_m, None, 0.075)
             xrange = coeplot.prangelog(lambda_m, None, 0.075)

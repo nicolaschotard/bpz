@@ -59,21 +59,21 @@ def flux(xsr, ys, yr, ccd='yes', units='nu'):
         return f_l
 
 
-def pivotal_wl(filter, ccd='yes'):
-    xr, yr = get_filter(filter)
+def pivotal_wl(filt, ccd='yes'):
+    xr, yr = get_filter(filt)
     if ccd == 'yes':
         yr = yr * xr
     norm = np.trapz(yr, xr)
     return np.sqrt(old_div(norm, np.trapz(yr / xr / xr, xr)))
 
 
-def filter_center(filter, ccd='yes'):
+def filter_center(filt, ccd='yes'):
     """Estimates the central wavelenght of the filter"""
-    if type(filter) == type(""):
-        xr, yr = get_filter(filter)
+    if isinstance(filt, str):
+        xr, yr = get_filter(filt)
     else:
-        xr = filter[0]
-        yr = filter[1]
+        xr = filt[0]
+        yr = filt[1]
     if ccd == 'yes':
         yr = yr * xr
     return old_div(np.trapz(yr * xr, xr), np.trapz(yr, xr))
@@ -213,7 +213,7 @@ def etau(wl, z):
     return np.exp(-tau)
 
 
-def get_sednfilter(sed, filter):
+def get_sednfilter(sed, filt):
     # Gets a pair of SED and filter from the database
     # And matches the filter resolution to that of the spectrum
     # where they overlap
@@ -221,16 +221,16 @@ def get_sednfilter(sed, filter):
     xs,ys,yr=get_sednfilter(sed,filter)
     """
     # Figure out the correct names
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
+    if filt[-4:] != '.res':
+        filt = filt + '.res'
     if sed[-4:] != '.sed':
         sed = sed + '.sed'
     sed = sed_dir + sed
-    filter = fil_dir + filter
+    filt = fil_dir + filt
     # Get the data
     x_sed, y_sed = useful.get_data(sed, list(range(2)))
     nsed = len(x_sed)
-    x_res, y_res = useful.get_data(filter, list(range(2)))
+    x_res, y_res = useful.get_data(filt, list(range(2)))
     nres = len(x_res)
     if not useful.ascend(x_sed):
         print()
@@ -240,7 +240,7 @@ def get_sednfilter(sed, filter):
     if not useful.ascend(x_res):
         print()
         print('Warning!!!')
-        print('The wavelenghts in %s are not properly ordered' % filter)
+        print('The wavelenghts in %s are not properly ordered' % filt)
         print('They should start with the shortest lambda and end with the longest')
 
     # Define the limits of interest in wavelenght
@@ -272,21 +272,21 @@ def get_sed(sed):
     return x, y
 
 
-def get_filter(filter):
+def get_filter(filt):
     # Get x_res,y_res from a database spectrum
     """Usage:
     xres,yres=get_filter(filter)
     """
     # Figure out the correct names
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    filter = fil_dir + filter
+    if filt[-4:] != '.res':
+        filt = filt + '.res'
+    filt = fil_dir + filt
     # Get the data
-    x, y = useful.get_data(filter, list(range(2)))
+    x, y = useful.get_data(filt, list(range(2)))
     if not useful.ascend(x):
         print()
         print('Warning!!!')
-        print('The wavelenghts in %s are not properly ordered' % filter)
+        print('The wavelenghts in %s are not properly ordered' % filt)
         print('They should start with the shortest lambda and end with the longest')
     return x, y
 
@@ -318,29 +318,28 @@ def obs_spectrum(sed, z, madau=1):
     return x_sed, ys_z
 
 
-def f_z_sed(sed, filter, z=np.array([0.]), ccd='yes', units='lambda', madau='yes'):
+def f_z_sed(sed, filt, z=np.array([0.]), ccd='yes', units='lambda', madau='yes'):
     """
     Returns array f with f_lambda(z) or f_nu(z) through a given filter
     Takes into account intergalactic extinction.
     Flux normalization at each redshift is arbitrary
     """
 
-    if type(z) == type(0.):
+    if isinstance(z, float)::
         z = np.array([z])
 
     # Figure out the correct names
     if sed[-4:] != '.sed':
         sed = sed + '.sed'
     sed = sed_dir + sed
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    filter = fil_dir + filter
+    if filt[-4:] != '.res':
+        filt = filt + '.res'
+    filt = fil_dir + filt
 
     # Get the data
     x_sed, y_sed = useful.get_data(sed, list(range(2)))
     nsed = len(x_sed)
-    x_res, y_res = useful.get_data(filter, list(range(2)))
-    nres = len(x_res)
+    x_res, y_res = useful.get_data(filt, list(range(2)))
 
     if not useful.ascend(x_sed):
         print()
@@ -352,7 +351,7 @@ def f_z_sed(sed, filter, z=np.array([0.]), ccd='yes', units='lambda', madau='yes
     if not useful.ascend(x_res):
         print()
         print('Warning!!!')
-        print('The wavelenghts in %s are not properly ordered' % filter)
+        print('The wavelenghts in %s are not properly ordered' % filt)
         print('They should start with the shortest lambda and end with the longest')
         print('This will probably crash the program')
 
@@ -412,7 +411,7 @@ def f_z_sed(sed, filter, z=np.array([0.]), ccd='yes', units='lambda', madau='yes
         return f
 
 
-def ABflux(sed, filter, madau='yes'):
+def ABflux(sed, filt, madau='yes'):
     """
     Calculates a AB file like the ones used by bpz
     It will set to zero all fluxes
@@ -421,7 +420,7 @@ def ABflux(sed, filter, madau='yes'):
     colors at very high-z
     """
 
-    print(sed, filter)
+    print(sed, filt)
     ccd = 'yes'
     units = 'nu'
     madau = madau
@@ -432,15 +431,14 @@ def ABflux(sed, filter, madau='yes'):
     if sed[-4:] != '.sed':
         sed = sed + '.sed'
     sed = sed_dir + sed
-    if filter[-4:] != '.res':
-        filter = filter + '.res'
-    filter = fil_dir + filter
+    if filt[-4:] != '.res':
+        filt = filt + '.res'
+    filt = fil_dir + filt
 
     # Get the data
     x_sed, y_sed = useful.get_data(sed, list(range(2)))
     nsed = len(x_sed)
-    x_res, y_res = useful.get_data(filter, list(range(2)))
-    nres = len(x_res)
+    x_res, y_res = useful.get_data(filt, list(range(2)))
 
     if not useful.ascend(x_sed):
         print()
@@ -452,7 +450,7 @@ def ABflux(sed, filter, madau='yes'):
     if not useful.ascend(x_res):
         print()
         print('Warning!!!')
-        print('The wavelenghts in %s are not properly ordered' % filter)
+        print('The wavelenghts in %s are not properly ordered' % filt)
         print('They should start with the shortest lambda and end with the longest')
         print('This will probably crash the program')
 
@@ -537,19 +535,19 @@ def ABflux(sed, filter, madau='yes'):
             f[i] = np.trapz(ys_z * r, x_r) * const
 
     ABoutput = ab_dir + \
-        sed.split('/')[-1][:-4] + '.' + filter.split('/')[-1][:-4] + '.AB'
+        sed.split('/')[-1][:-4] + '.' + filt.split('/')[-1][:-4] + '.AB'
 
     print('Writing AB file ', ABoutput)
     useful.put_data(ABoutput, (z_ab, f))
 
 
-def VegatoAB(m_vega, filter, Vega=Vega):
-    cons = AB(f_z_sed(Vega, filter, z=0., units='nu', ccd='yes'))
+def VegatoAB(m_vega, filt, Vega=Vega):
+    cons = AB(f_z_sed(Vega, filt, z=0., units='nu', ccd='yes'))
     return m_vega + cons
 
 
-def ABtoVega(m_ab, filter, Vega=Vega):
-    cons = AB(f_z_sed(Vega, filter, z=0., units='nu', ccd='yes'))
+def ABtoVega(m_ab, filt, Vega=Vega):
+    cons = AB(f_z_sed(Vega, filt, z=0., units='nu', ccd='yes'))
     return m_ab - cons
 
 # Photometric redshift functions

@@ -4,6 +4,8 @@ from __future__ import absolute_import
 import os
 import sys
 import numpy as np
+from . import MLab_coe
+from . import coeio
 sys.float_output_precision = 5  # PRINTING ARRAYS: # OF DECIMALS
 numerix = os.environ.get('NUMERIX', '')
 
@@ -34,30 +36,23 @@ def str2num(strg, rf=0):
     ALSO RETURNS FORMAT IF rf=1"""
     try:
         num = int(strg)
-        format = 'd'
+        lformat = 'd'
     except:
         try:
             num = float(strg)
-            format = 'f'
+            lformat = 'f'
         except:
             if not strg.strip():
                 num = None
-                format = ''
+                lformat = ''
             else:
                 num = strg
-                format = 's'
+                lformat = 's'
     if rf:
-        return (num, format)
+        return (num, lformat)
     else:
         return num
 
-
-def minmax(x, range=None):
-    if range:
-        lo, hi = range
-        good = between(lo, x, hi)
-        x = np.compress(good, x)
-    return min(x), max(x)
 
 #############################################################################
 # ARRAYS
@@ -76,16 +71,16 @@ def FltArr(n0, n1):
     return(a[:])
 
 
-def striskey(str):
-    """IS str AN OPTION LIKE -C or -ker
+def striskey(lstr):
+    """IS lstr AN OPTION LIKE -C or -ker
     (IT'S NOT IF IT'S -2 or -.9)"""
     iskey = 0
-    if str:
-        if str[0] == '-':
+    if lstr:
+        if lstr[0] == '-':
             iskey = 1
-            if len(str) > 1:
-                iskey = str[1] not in ['0', '1', '2', '3',
-                                       '4', '5', '6', '7', '8', '9', '.']
+            if len(lstr) > 1:
+                iskey = lstr[1] not in ['0', '1', '2', '3',
+                                        '4', '5', '6', '7', '8', '9', '.']
     return iskey
 
 
@@ -104,23 +99,19 @@ def stringsplitatoi(strg, separator=''):
     return vals
 
 
-def stringsplitatof(str, separator=''):
+def stringsplitatof(lstr, separator=''):
     if separator:
-        words = str.split(separator)
+        words = lstr.split(separator)
     else:
-        words = str.split()
+        words = lstr.split()
     vals = []
     for word in words:
         vals.append(float(word))
     return vals
 
 
-def strbegin(str, phr):
-    return str[:len(phr)] == phr
-
-
-def strend(str, phr):
-    return str[-len(phr):] == phr
+def strend(lstr, phr):
+    return lstr[-len(phr):] == phr
 
 
 def strbtw(s, left, right=None, r=False):
@@ -129,7 +120,7 @@ def strbtw(s, left, right=None, r=False):
     EXAMPLE strbtw('det_{a}.reg', '{}') RETURNS 'a'
     EXAMPLE strbtw('det_{{a}, b}.reg', '{}', r=1) RETURNS '{a}, b'"""
     out = None
-    if right == None:
+    if right is None:
         if len(left) == 1:
             right = left
         elif len(left) == 2:
@@ -159,34 +150,19 @@ def getanswer(question=''):
 
 
 ask = getanswer
-    
-
-def common(id1, id2):
-    # ASSUME NO IDS ARE NEGATIVE
-    id1 = np.array(id1).astype(int)
-    id2 = np.array(id2).astype(int)
-    n = max((max(id1), max(id2)))
-    in1 = np.zeros(n + 1, int)
-    in2 = np.zeros(n + 1, int)
-    put(in1, id1, 1)
-    put(in2, id2, 1)
-    inboth = in1 * in2
-    ids = np.arange(n + 1)
-    ids = np.compress(inboth, ids)
-    return ids
 
 
 def invertselection(ids, all):
     if type(all) == int:  # size input
         all = np.arange(all) + 1
-        put(all, np.array(ids) - 1, 0)
+        coeio.put(all, np.array(ids) - 1, 0)
         all = np.compress(all, all)
         return all
     else:
         out = []
         for val in all:
             # if val not in ids:
-            if not floatin(val, ids):
+            if not MLab_coe.floatin(val, ids):
                 out.append(val)
         return out
 
@@ -264,12 +240,11 @@ def findmatches2(x1, y1, x2, y2):
     """MEASURES ALL DISTANCES, FINDS MINIMA
     SEARCHES FOR 2 IN 1
     RETURNS INDICES AND DISTANCES"""
-    dx = subtract.outer(x1, x2)
-    dy = subtract.outer(y1, y2)
+    dx = np.subtract.outer(x1, x2)
+    dy = np.subtract.outer(y1, y2)
     d = np.sqrt(dx**2 + dy**2)
     i = np.argmin(d, 0)
 
-    n1 = len(x1)
     n2 = len(x2)
     j = np.arange(n2)
     di = n2 * i + j
@@ -283,10 +258,10 @@ def takeids(data, ids, idrow=0, keepzeros=0):
     ids = ids.astype(int)
     outdata = []
     n = data.shape[1]
-    for id in ids:
+    for lid in ids:
         gotit = 0
         for i in range(n):
-            if id == dataids[i]:
+            if lid == dataids[i]:
                 gotit = 1
                 break
         if gotit:

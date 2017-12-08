@@ -17,12 +17,10 @@ import os
 import glob
 import sys
 import time
-#import pickle
 import shelve
 import matplotlib
 matplotlib.use('TkAgg')
 import pylab
-from . import coetools
 from . import coeio
 from . import MLab_coe
 
@@ -46,13 +44,13 @@ def bpz_run(argv=None):
     def seglist(vals, mask=None):
         """Split vals into lists based on mask > 0"""
         if mask is None:
-            mask = greater(vals, 0)
+            mask = np.greater(vals, 0)
         lists = []
         i = 0
         lastgood = False
         list1 = []
         for i in range(len(vals)):
-            if mask[i] == False:
+            if not mask[i]:
                 if lastgood:
                     lists.append(list1)
                     list1 = []
@@ -285,7 +283,7 @@ def bpz_run(argv=None):
             filters.remove(cosa)
 
     if pars.d['EXCLUDE'] != 'none':
-        if type(pars.d['EXCLUDE']) == type(' '):
+        if isinstance(pars.d['EXCLUDE'], str):
             pars.d['EXCLUDE'] = [pars.d['EXCLUDE']]
         for cosa in pars.d['EXCLUDE']:
             if filters.count(cosa):
@@ -296,7 +294,7 @@ def bpz_run(argv=None):
             filter = filter[:-4]
         if filter not in filters_db:
             print('filter ', filter, 'not in database at', fil_dir, ':')
-            if ask('Print filters in database?'):
+            if useful.ask('Print filters in database?'):
                 for line in filters_db:
                     print(line)
             sys.exit()
@@ -340,7 +338,7 @@ def bpz_run(argv=None):
                     sys.exit()
                 # print spectra[it],filters[jf]
                 print('     Generating ', model, '....')
-                ABflux(spectra[it], filtro, madau=pars.d['MADAU'])
+                bpz_tools.ABflux(spectra[it], filtro, madau=pars.d['MADAU'])
 
             zo, f_mod_0 = useful.get_data(model_path, (0, 1))
             # Rebin the data to the required redshift resolution
@@ -377,15 +375,15 @@ def bpz_run(argv=None):
 
     if ninterp:
         nti = nt + (nt - 1) * ninterp
-        buffer = np.zeros((nz, nti, nf)) * 1.
+        buff = np.zeros((nz, nti, nf)) * 1.
         tipos = np.arange(0., float(nti), float(ninterp) + 1.)
         xtipos = np.arange(float(nti))
         for iz in np.arange(nz):
             for jf in range(nf):
-                buffer[iz, :, jf] = useful.match_resol(
+                buff[iz, :, jf] = useful.match_resol(
                     tipos, f_mod[iz, :, jf], xtipos)
         nt = nti
-        f_mod = buffer
+        f_mod = buff
 
     # Load all the parameters in the columns file to a dictionary
     col_pars = useful.params()
@@ -430,7 +428,7 @@ def bpz_run(argv=None):
             print("""Allowed values for magnitudes are 
     	0<m<""" + repr(undet) + " m=" + repr(undet) + "(non detection), m=" + repr(unobs) + "(not observed)")
             for i in range(len(todo)):
-                if not alltrue(todo[i, :]):
+                if not np.alltrue(todo[i, :]):
                     print(i + 1, f_obs[i, :], ef_obs[i, :])
             sys.exit()
 
@@ -520,7 +518,7 @@ def bpz_run(argv=None):
     # Convert fluxes to AB if needed
     for i in range(f_obs.shape[1]):
         if cals[i] == 'Vega':
-            const = mag2flux(VegatoAB(0., filters[i]))
+            const = bpz_tools.mag2flux(bpz_tools.VegatoAB(0., filters[i]))
             f_obs[:, i] = f_obs[:, i] * const
             ef_obs[:, i] = ef_obs[:, i] * const
         elif cals[i] == 'AB':
@@ -539,9 +537,9 @@ def bpz_run(argv=None):
     if 'ID' in col_pars.d:
         #    print col_pars.d['ID']
         id_col = int(col_pars.d['ID']) - 1
-        id = useful.get_str(obs_file, id_col)
+        lid = useful.get_str(obs_file, id_col)
     else:
-        id = list(map(str, list(range(1, len(f_obs[:, 0]) + 1))))
+        lid = list(map(str, list(range(1, len(f_obs[:, 0]) + 1))))
 
     # Get spectroscopic redshifts (if present)
     if 'Z_S' in col_pars.d:
@@ -569,14 +567,12 @@ def bpz_run(argv=None):
         # PHOTOMETRIC CALIBRATION CHECK
         # Defaults: r=1, dm=1, w=0
         frat = np.ones((ng, nf), float)
-        dmag = np.ones((ng, nf), float)
         fw = np.zeros((ng, nf), float)
 
     # Visualize the colors of the galaxies and the templates
 
     # When there are spectroscopic redshifts available
-    if interactive and 'Z_S' in col_pars.d and plots and checkSED and ask('Plot colors vs spectroscopic redshifts?'):
-        color_m = np.zeros((nz, nt, nf - 1)) * 1.
+    if interactive and 'Z_S' in col_pars.d and plots and checkSED and useful.ask('Plot colors vs spectroscopic redshifts?'):
         pylab.figure(1)
         nrows = 2
         ncols = old_div((nf - 1), nrows)
@@ -613,7 +609,7 @@ def bpz_run(argv=None):
     if 'OTHER' in col_pars.d:
         if col_pars.d['OTHER'] != 'all':
             other_cols = col_pars.d['OTHER']
-            if type(other_cols) == type((2,)):
+            if isinstance(other_cols, list):
                 other_cols = tuple(map(int, other_cols))
             else:
                 other_cols = (int(other_cols),)
@@ -681,7 +677,7 @@ def bpz_run(argv=None):
     claves = list(pars.d.keys())
     claves.sort()
     for key in claves:
-        if type(pars.d[key]) == type((1,)):
+        if isinstance(pars.d[key], list):
             cosa = ','.join(list(pars.d[key]))
         else:
             cosa = str(pars.d[key])
@@ -718,18 +714,18 @@ def bpz_run(argv=None):
     cluster_prior = 0.
     if pars.d['ZC']:
         cluster_prior = 1
-        if type(pars.d['ZC']) == type(""):
+        if isinstance(pars.d['ZC'], str):
             zc = np.array([float(pars.d['ZC'])])
         else:
             zc = np.array(list(map(float, pars.d['ZC'])))
-        if type(pars.d['FC']) == type(""):
+        if isinstance(pars.d['FC'], str):
             fc = np.array([float(pars.d['FC'])])
         else:
             fc = np.array(list(map(float, pars.d['FC'])))
 
         fcc = np.add.reduce(fc)
         if fcc > 1.:
-            print(ftc)
+            print(fcc)
             raise 'Too many galaxies in clusters!'
         pi_c = np.zeros((nz, nt)) * 1.
         # Go over the different cluster spikes
@@ -739,7 +735,7 @@ def bpz_run(argv=None):
             # Clip values to avoid overflow
             exponente = np.clip(-(z - zc[i])**2 / 2. / (0.00333)**2, -700., 0.)
             # Outside the cluster range g is 0
-            g = exp(exponente) * cluster_range
+            g = np.exp(exponente) * cluster_range
             norm = np.add.reduce(g)
             pi_c[:, 0] = pi_c[:, 0] + g / norm * fc[i]
 
@@ -749,7 +745,7 @@ def bpz_run(argv=None):
             pi_c[:, i] = pi_c[:, i] + pi_c[:, 0]
 
     # Output format
-    format = '%' + repr(np.maximum(5, len(id[0]))) + 's'  # ID format
+    format = '%' + repr(np.maximum(5, len(lid[0]))) + 's'  # ID format
     format = format + pars.d['N_PEAKS'] * \
         ' %.3f %.3f  %.3f %.3f %.5f' + ' %.3f %.3f %10.3f'
 
@@ -757,7 +753,7 @@ def bpz_run(argv=None):
     sxhdr = """##
 ##Column information
 ##
-# 1 ID"""
+# 1 LID"""
     k = 1
 
     if pars.d['N_PEAKS'] > 1:
@@ -842,7 +838,7 @@ def bpz_run(argv=None):
 
         if pars.d['ONLY_TYPE'] == 'yes':  # Use only the redshift information, no priors
             p_i = np.zeros((nz, nt)) * 1.
-            j = searchsorted(z, z_s[ig])
+            j = np.searchsorted(z, z_s[ig])
             # print j,nt,z_s[ig]
             p_i[j, :] = old_div(1., float(nt))
         else:
@@ -858,7 +854,7 @@ def bpz_run(argv=None):
                 p_i = (1. - fcc) * p_i + pi_c
 
         if save_full_probs:
-            full_probs[id[ig]] = [z, p_i[:nz, :nt], p[:nz, :nt], red_chi2]
+            full_probs[lid[ig]] = [z, p_i[:nz, :nt], p[:nz, :nt], red_chi2]
 
         # Multiply the prior by the likelihood to find the final probability
         pb = p_i[:nz, :nt] * p[:nz, :nt]
@@ -889,9 +885,9 @@ def bpz_run(argv=None):
             if norma == 0.:
                 norma = 1.
             p_spec[ig, :] /= norma
-            # vyjod=tuple([id[ig]]+list(z_spec[ig,:])+list(p_spec[ig,:])+[z_s[ig],
+            # vyjod=tuple([lid[ig]]+list(z_spec[ig,:])+list(p_spec[ig,:])+[z_s[ig],
             #                int(float(other[ig]))])
-            vyjod = tuple([id[ig]] + list(z_spec[ig, :]) + list(p_spec[ig, :]))
+            vyjod = tuple([lid[ig]] + list(z_spec[ig, :]) + list(p_spec[ig, :]))
             formato = "%s " + 5 * " %.4f"
             formato += 5 * " %.3f"
             #formato+="  %4f %i"
@@ -909,25 +905,24 @@ def bpz_run(argv=None):
             g_min += np.equal(p_bayes[1:-1], 0.) * np.greater(p_bayes[2:], 0.)
             g_min += np.equal(p_bayes[1:-1], 0.) * np.greater(p_bayes[:-2], 0.)
 
-            i_max = compress(g_max, np.arange(nz - 2)) + 1
-            i_min = compress(g_min, np.arange(nz - 2)) + 1
+            i_max = np.compress(g_max, np.arange(nz - 2)) + 1
+            i_min = np.compress(g_min, np.arange(nz - 2)) + 1
 
             # Check that the first point and the last one are not minima or maxima,
             # if they are, add them to the index arrays
 
             if p_bayes[0] > p_bayes[1]:
-                i_max = concatenate([[0], i_max])
-                i_min = concatenate([[0], i_min])
+                i_max = np.concatenate([[0], i_max])
+                i_min = np.concatenate([[0], i_min])
             if p_bayes[-1] > p_bayes[-2]:
-                i_max = concatenate([i_max, [nz - 1]])
-                i_min = concatenate([i_min, [nz - 1]])
+                i_max = np.concatenate([i_max, [nz - 1]])
+                i_min = np.concatenate([i_min, [nz - 1]])
             if p_bayes[0] < p_bayes[1]:
-                i_min = concatenate([[0], i_min])
+                i_min = np.concatenate([[0], i_min])
             if p_bayes[-1] < p_bayes[-2]:
-                i_min = concatenate([i_min, [nz - 1]])
+                i_min = np.concatenate([i_min, [nz - 1]])
 
-            p_max = take(p_bayes, i_max)
-            # p_min=take(p_bayes,i_min)
+            p_max = np.take(p_bayes, i_max)
             p_tot = []
             z_peaks = []
             t_peaks = []
@@ -935,7 +930,7 @@ def bpz_run(argv=None):
             p_max, i_max = multisort(old_div(1., p_max), (p_max, i_max))
             # For each maximum, define the minima which sandwich it
             # Assign minima to each maximum
-            jm = searchsorted(i_min, i_max)
+            jm = np.searchsorted(i_min, i_max)
             p_max = list(p_max)
 
             for i in range(len(i_max)):
@@ -1002,8 +997,8 @@ def bpz_run(argv=None):
         o = bpz_tools.odds(p_bayes[:nz], z, zo1, zo2)
 
         # Integrate within the same odds interval to find the type
-        # izo1=np.maximum(0,searchsorted(z,zo1)-1)
-        # izo2=np.minimum(nz,searchsorted(z,zo2))
+        # izo1=np.maximum(0,np.searchsorted(z,zo1)-1)
+        # izo2=np.minimum(nz,np.searchsorted(z,zo2))
         # t_b=np.argmax(np.add.reduce(p[izo1:izo2,:nt],0))
 
         it_b = np.argmax(pb[iz_b, :nt])
@@ -1034,10 +1029,10 @@ def bpz_run(argv=None):
         # Print output
 
         if pars.d['N_PEAKS'] == 1:
-            salida = [id[ig], zb, z1, z2, tt_b + 1,
+            salida = [lid[ig], zb, z1, z2, tt_b + 1,
                       o, z[iz_ml], tt_ml + 1, red_chi2]
         else:
-            salida = [id[ig]]
+            salida = [lid[ig]]
             for k in range(pars.d['N_PEAKS']):
                 if k <= len(p_tot) - 1:
                     salida = salida + \
@@ -1064,14 +1059,13 @@ def bpz_run(argv=None):
             ft = f_mod[iz_b, it_b, :]
             fo = f_obs[ig, :]
             efo = ef_obs[ig, :]
-            dfosq = (old_div((ft - fo), efo)) ** 2
             factor = ft / efo / efo
             ftt = np.add.reduce(ft * factor)
             fot = np.add.reduce(fo * factor)
             am = old_div(fot, ftt)
             ft = ft * am
 
-            flux_comparison = [id[ig], m_0[ig], z[iz_b],
+            flux_comparison = [lid[ig], m_0[ig], z[iz_b],
                                t_b, am] + list(np.concatenate([ft, fo, efo]))
             nfc = len(flux_comparison)
 
@@ -1090,7 +1084,7 @@ def bpz_run(argv=None):
                 fw[ig, :] = np.clip(fw[ig, :], 0, 100)
 
         if save_probs:
-            texto = '%s ' % str(id[ig])
+            texto = '%s ' % str(lid[ig])
             texto += len(p_bayes) * '%.3e ' + '\n'
             probs.write(texto % tuple(p_bayes))
 
@@ -1101,7 +1095,7 @@ def bpz_run(argv=None):
         # 4. normalized such that np.sum(P(z)) = 1
         if save_probs2:  # P = np.exp(-chisq / 2)
             pmin = pmax * float(pars.d['P_MIN'])
-            chisq = -2 * log(pb)
+            chisq = -2 * np.log(pb)
             for itb in range(nt):
                 chisqtb = chisq[:, itb]
                 pqual = np.greater(pb[:, itb], pmin)
@@ -1112,7 +1106,7 @@ def bpz_run(argv=None):
                 zlists = seglist(zz, pqual)
                 for i in range(len(zlists)):
                     probs2.write('%s  %2d  %.3f  ' %
-                                 (id[ig], itb + 1, zlists[i][0]))
+                                 (lid[ig], itb + 1, zlists[i][0]))
                     fmt = len(chisqlists[i]) * '%4.2f ' + '\n'
                     probs2.write(fmt % tuple(chisqlists[i]))
 
@@ -1158,7 +1152,7 @@ def bpz_run(argv=None):
         # Plot the comparison between z_spec and z_B
 
         if 'Z_S' in col_pars.d:
-            if not interactive or ask('Compare z_B vs z_spec?'):
+            if not interactive or useful.ask('Compare z_B vs z_spec?'):
                 good = np.less(z_s, 9.99)
                 print(
                     'Total initial number of objects with spectroscopic redshifts= ', np.sum(good))
@@ -1285,7 +1279,6 @@ def bpz_finalize(argv=None):
         #nf = 6
         nf = old_div((len(data) - 5), 3)
         # id  M0  zb  tb*3
-        id = data[0]
         ft = data[5:5 + nf]  # FLUX (from spectrum for that TYPE)
         fo = data[5 + nf:5 + 2 * nf]  # FLUX (OBSERVED)
         efo = data[5 + 2 * nf:5 + 3 * nf]  # FLUX_ERROR (OBSERVED)

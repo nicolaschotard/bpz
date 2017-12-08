@@ -8,7 +8,6 @@ import pylab
 
 import os
 import numpy as np
-from bpz import coeio
 from bpz import MLab_coe
 from bpz import coetools
 
@@ -38,9 +37,9 @@ pparams = {'axes.labelsize': fontsize,
 
 
 def thick(fontsize=18, labsize=None, legsize=None, left=0.125, bottom=0.125, top=0.95, right=0.95, lw=2):
-    if labsize == None:
+    if labsize is None:
         labsize = fontsize
-    if legsize == None:
+    if legsize is None:
         legsize = fontsize - 4
     pparams = {
         'axes.labelsize': labsize,
@@ -119,11 +118,12 @@ def savepng(figname):
     pylab.savefig(figname + '.png')
 
 
-def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, xlog=False, **other):
-    if ax == None:
+def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1,
+                  ax=None, xlog=False, **other):
+    if ax is None:
         ax = pylab.gca()
 
-    if ymax == None:
+    if ymax is None:
         ymin = y - dy
         ymax = y + dy
     else:
@@ -136,7 +136,6 @@ def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, xlog=False, *
         dx = dxlog * x / np.log10(np.e)
     else:
         dx = 0.005 * xfac * (xlim()[1] - xlim()[0])
-    itemp = pylab.isinteractive()
     xtemp = xlim()
     ytemp = ylim()
     pylab.ioff()
@@ -147,7 +146,7 @@ def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, xlog=False, *
         ax.plot([x[i] - dx, x[i] + dx],
                 [ymin[i], ymin[i]], color=color, **other)
 
-    if itemp:
+    if pylab.isinteractive():
         pylab.ion()
         pylab.show()
 
@@ -159,14 +158,14 @@ def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, xlog=False, *
 
 
 def xlim(lo=None, hi=None):
-    if lo == None and hi == None:
+    if lo is None and hi is None:
         return pylab.xlim()
     else:
         if MLab_coe.singlevalue(lo):
             lo1, hi1 = pylab.xlim()
-            if lo == None:
+            if lo is None:
                 lo = lo1
-            if hi == None:
+            if hi is None:
                 hi = hi1
         else:
             lo, hi = lo
@@ -174,14 +173,14 @@ def xlim(lo=None, hi=None):
 
 
 def ylim(lo=None, hi=None):
-    if lo == None and hi == None:
+    if lo is None and hi is None:
         return pylab.ylim()
     else:
         if MLab_coe.singlevalue(lo):
             lo1, hi1 = pylab.ylim()
-            if lo == None:
+            if lo is None:
                 lo = lo1
-            if hi == None:
+            if hi is None:
                 hi = hi1
         else:
             lo, hi = lo
@@ -210,7 +209,7 @@ def rectangle(lolimits, hilimits, fillit=0, **other):
 def retick(lo, hi, N, ndec=1, ytx=None, sh=1):
     N = N - 1.
 
-    if ytx == None:
+    if ytx is None:
         ylocs = np.arange(0, N + .001, old_div(N, 4.))
         ytx = ylocs / float(N) * (hi - lo) + lo
     else:
@@ -218,9 +217,8 @@ def retick(lo, hi, N, ndec=1, ytx=None, sh=1):
 
     ytxs = []
     for ytick in ytx:
-        format = '%%.%df' % ndec
-        ytxs.append(format % ytick)
-        #ytxs.append('%.1f' % ytick)
+        form = '%%.%df' % ndec
+        ytxs.append(form % ytick)
 
     pylab.yticks(ylocs, ytxs)
     pylab.xticks(ylocs, ytxs)
@@ -269,7 +267,7 @@ def prangelog(x, xinclude=None, margin=0.05):
     margin = FRACTIONAL MARGIN ON EITHER SIDE OF DATA."""
     xmin = min(x)
     xmax = max(x)
-    if xinclude != None:
+    if xinclude is not None:
         xmin = min([xmin, xinclude])
         xmax = max([xmax, xinclude])
 

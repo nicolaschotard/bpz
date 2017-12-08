@@ -1,13 +1,11 @@
 from __future__ import division
 from __future__ import absolute_import
 from past.utils import old_div
-#from . import bpz_tools
 import numpy as np
 
 
 def function(z, m, nt):
-    """HDFN prior from Benitez 2000
-    for Ellipticals, Spirals, and Irregular/Starbursts
+    """HDFN prior from Benitez 2000 for Ellipticals, Spirals, and Irregular/Starbursts
     Returns an array pi[z[:],:nt]
     The input magnitude is F814W AB
     """
@@ -48,16 +46,6 @@ def function(z, m, nt):
     fo_t = 0.35, 0.5
     fo_t = old_div(fo_t, np.array(nn[:2]))
     fo_t = np.repeat(fo_t, nn[:2])
-    #fo_t = [0.35, 0.5]
-    #fo_t.append(1 - sum(fo_t))
-    #fo_t = array(fo_t) / array(nn)
-    #fo_t = repeat(fo_t, nn)
-
-    # print 'a', a
-    # print 'zo', zo
-    # print 'km', km
-    # print 'fo_t', fo_t
-    # print 'k_t', k_t
 
     dm = m - momin_hdf
     zmt = np.clip(zo + km * dm, 0.01, 15.)
@@ -76,11 +64,9 @@ def function(z, m, nt):
     f_t = np.zeros((len(a),), float)
     f_t[:nellsp] = fo_t * np.exp(-k_t * dm)
     f_t[nellsp:] = old_div((1. - np.add.reduce(f_t[:nellsp])), float(nsb))
-    # Formula:
-    # zm=zo+km*(m_m_min)
-    # p(z|T,m)=(z**a)*exp(-(z/zm)**a)
-    p_i = zt_at_a[:nz, :nt] * \
-        np.exp(-np.clip(old_div(zt_at_a[:nz, :nt], zmt_at_a[:nt]), 0., 700.))
+    # Formula: zm=zo+km*(m_m_min) p(z|T,m)=(z**a)*exp(-(z/zm)**a)
+    p_i = zt_at_a[:nz, :nt] * np.exp(-np.clip(old_div(zt_at_a[:nz, :nt],
+                                                      zmt_at_a[:nt]), 0., 700.))
     # This eliminates the very low level tails of the priors
     norm = np.add.reduce(p_i[:nz, :nt], 0)
     p_i[:nz, :nt] = np.where(np.less(old_div(p_i[:nz, :nt], norm[:nt]), old_div(1e-2, float(nz))),

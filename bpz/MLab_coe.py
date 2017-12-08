@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from past.utils import old_div
 import numpy as np
 from scipy.special import erf
-from scipy.optimize import golden
 import numpy.random as RandomArray
 
 
@@ -37,8 +36,8 @@ def base(b, nums):
     return x
 
 
-def strbegin(str, phr):  # coetools.py
-    return str[:len(phr)] == phr
+def strbegin(stri, phr):  # coetools.py
+    return stri[:len(phr)] == phr
 
 
 def prange(x, xinclude=None, margin=0.05):
@@ -47,7 +46,7 @@ def prange(x, xinclude=None, margin=0.05):
     margin = FRACTIONAL MARGIN ON EITHER SIDE OF DATA."""
     xmin = min(x)
     xmax = max(x)
-    if xinclude != None:
+    if xinclude is not None:
         xmin = min([xmin, xinclude])
         xmax = max([xmax, xinclude])
 
@@ -59,14 +58,6 @@ def prange(x, xinclude=None, margin=0.05):
         xmin = xmin - margin
         xmax = xmax + margin
     return [xmin, xmax]
-
-
-def minmax(x, range=None):
-    if range:
-        lo, hi = range
-        good = between(lo, x, hi)
-        x = np.compress(good, x)
-    return min(x), max(x)
 
 
 def gaussin(nsigma=1):
@@ -376,7 +367,7 @@ def ndec(x, max=3):  # --DC
     return 0  # IF ALL ELSE FAILS...  THERE'S NO DECIMALS
 
 
-def interp(x, xdata, ydata, silent=0, extrap=0):  # NEW VERSION!
+def interp(x, xdata, ydata, extrap=0):  # NEW VERSION!
     """DETERMINES y AS LINEAR INTERPOLATION OF 2 NEAREST ydata"""
     SI = np.argsort(xdata)
     xdata = xdata.take(SI, 0)
@@ -418,24 +409,24 @@ def rand(*args):
     return RandomArray.random(args)
 
 
-def eye(N, M=None, k=0, dtype=None):
+def eye(N, M=None, k=0):
     """eye(N, M=N, k=0, dtype=None) returns a N-by-M matrix where the 
     k-th diagonal is all ones, and everything else is zeros.
     """
-    if M == None:
+    if M is None:
         M = N
-    if type(M) == type('d'):
+    if isinstance(M, str):
         typecode = M
         M = N
     m = np.equal(np.subtract.outer(np.arange(N), np.arange(M)), -k)
     return np.asarray(m, dtype=typecode)
 
 
-def tri(N, M=None, k=0, dtype=None):
+def tri(N, M=None, k=0):
     """tri(N, M=N, k=0, dtype=None) returns a N-by-M matrix where all
     the diagonals starting from lower left corner up to the k-th are all ones.
     """
-    if M == None:
+    if M is None:
         M = N
     if type(M) == type('d'):
         typecode = M
@@ -524,19 +515,16 @@ def std(m):
 
 
 def clip2(m, m_min=None, m_max=None):
-    if m_min == None:
+    if m_min is None:
         m_min = min(m)
-    if m_max == None:
+    if m_max is None:
         m_max = max(m)
     return np.clip(m, m_min, m_max)
 
 
-sum = np.add.reduce  # ALLOWS FOR AXIS TO BE INPUT --DC
-
-
 def total(m):
     """RETURNS THE TOTAL OF THE ENTIRE ARRAY --DC"""
-    return sum(np.ravel(m))
+    return np.add.reduce(np.ravel(m))
 
 
 def size(m):
@@ -569,7 +557,7 @@ def trapz(y, x=None):
         d = 1
     else:
         d = diff(x)
-    return sum(d * (y[1:] + y[0:-1]) / 2.0)
+    return np.add.reduce(d * (y[1:] + y[0:-1]) / 2.0)
 
 
 def xbins(x):
@@ -608,20 +596,20 @@ def histogram(a, bins):
     return n[1:] - n[:-1]
 
 
-def histo(a, da=1., amin=[], amax=[]):  # --DC
+def histo(a, da=1., amin=None, amax=None):  # --DC
     """
     Histogram of 'a' defined on the bin grid 'bins'
        Usage: h=histogram(p,xp)
     """
-    if amin == []:
+    if amin is None:
         amin = min(a)
-    if amax == []:
+    if amax is None:
         amax = max(a)
     nnn = old_div((amax - amin), da)
     if np.less(nnn - int(nnn), 1e-4):
         amax = amax + da
     bins = np.arange(amin, amax + da, da)
-    n = np.searchsorted(sort(a), bins)
+    n = np.searchsorted(np.sort(a), bins)
     n = np.array(list(map(float, n)))
     return n[1:] - n[:-1]
 
