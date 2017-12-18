@@ -5,14 +5,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from argparse import ArgumentParser
+# from argparse import ArgumentParser
 from past.utils import old_div
-from . import useful
-rolex = useful.watch()
-rolex.set()
-
-import numpy as np
-from . import bpz_tools
 import os
 import glob
 import sys
@@ -21,8 +15,13 @@ import shelve
 import matplotlib
 matplotlib.use('TkAgg')
 import pylab
+import numpy as np
 from . import coeio
 from . import MLab_coe
+from . import bpz_tools
+from . import useful
+rolex = useful.watch()
+rolex.set()
 
 
 def bpz_run(argv=None):
