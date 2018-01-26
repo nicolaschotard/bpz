@@ -20,6 +20,7 @@ Installation
 ------------
 
 To install this package, do::
+
     git clone https://github.com/nicolaschotard/bpz.git
     pip install bpz/
 
@@ -27,6 +28,7 @@ Usage
 -----
 
 To run ``bpz``, do::
+
     bpz_run.py UDFtest.cat -INTERP 2
     bpz_finalize.py UDFtest
 
