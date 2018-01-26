@@ -19,10 +19,14 @@ Documentation about BPZ can be found on the main BPZ webpage::
 Installation
 ------------
 
-TBD
+::
+    git clone https://github.com/nicolaschotard/bpz.git
+    pip install bpz/
 
 Usage
 -----
 
-TBD
+::
+    bpz_run.py UDFtest.cat -INTERP 2
+    bpz_finalize.py UDFtest
 
