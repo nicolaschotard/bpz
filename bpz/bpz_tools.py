@@ -325,7 +325,7 @@ def f_z_sed(sed, filt, z=np.array([0.]), ccd='yes', units='lambda', madau='yes')
     Flux normalization at each redshift is arbitrary
     """
 
-    if isinstance(z, float)::
+    if isinstance(z, float):
         z = np.array([z])
 
     # Figure out the correct names
